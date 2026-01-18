@@ -20,7 +20,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
   
   <!-- Styles -->
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles-v2.css">
   
   <title>Chidiya Udd - Bird Fly Game</title>
 </head>
@@ -388,23 +388,22 @@
   <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
   
   <!-- Game Logic -->
-  <script src="game.js"></script>
+  <script src="game-v2.js"></script>
   
   <!-- Multiplayer Logic -->
   <script src="peer-multiplayer.js"></script>
   
-  <!-- Service Worker Registration -->
+  <!-- Service Worker UN-Registration -->
   <script>
-    // Register service worker for PWA
+    // UNregister service worker to fix caching issues
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js')
-          .then((registration) => {
-            console.log('ServiceWorker registered:', registration.scope);
-          })
-          .catch((error) => {
-            console.log('ServiceWorker registration failed:', error);
-          });
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          for(let registration of registrations) {
+            console.log('Unregistering SW:', registration);
+            registration.unregister();
+          }
+        });
       });
     }
     

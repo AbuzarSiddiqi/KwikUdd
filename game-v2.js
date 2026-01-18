@@ -838,11 +838,12 @@ function displayItem(item) {
 }
 
 function startRoundTimer() {
-    console.log('Starting round timer for', GameState.roundDuration, 'ms');
+    console.log('>>> startRoundTimer() called, duration:', GameState.roundDuration, 'ms');
 
     const duration = GameState.roundDuration;
     const startTime = Date.now();
     const circumference = 565.48; // 2 * PI * 90
+    let frameCount = 0;
 
     if (elements.timerRing) {
         elements.timerRing.classList.remove('warning', 'danger');
@@ -854,35 +855,46 @@ function startRoundTimer() {
     }
 
     function updateTimer() {
-        const elapsed = Date.now() - startTime;
-        const remaining = Math.max(0, duration - elapsed);
-        const progress = remaining / duration;
+        try {
+            frameCount++;
+            const elapsed = Date.now() - startTime;
+            const remaining = Math.max(0, duration - elapsed);
+            const progress = remaining / duration;
 
-        // Update timer ring
-        if (elements.timerProgress) {
-            const offset = circumference * (1 - progress);
-            elements.timerProgress.style.strokeDashoffset = offset;
-        }
-
-        // Color changes
-        if (elements.timerRing) {
-            if (progress < 0.25) {
-                elements.timerRing.classList.add('danger');
-                elements.timerRing.classList.remove('warning');
-            } else if (progress < 0.5) {
-                elements.timerRing.classList.add('warning');
-                elements.timerRing.classList.remove('danger');
+            // Log every 30 frames (about twice per second)
+            if (frameCount % 30 === 0) {
+                console.log('Timer update: elapsed=' + elapsed + 'ms, remaining=' + remaining + 'ms');
             }
-        }
 
-        if (remaining > 0) {
-            GameState.roundTimer = requestAnimationFrame(updateTimer);
-        } else {
-            console.log('Timer ended, calling endRound()');
-            endRound();
+            // Update timer ring
+            if (elements.timerProgress) {
+                const offset = circumference * (1 - progress);
+                elements.timerProgress.style.strokeDashoffset = offset;
+            }
+
+            // Color changes
+            if (elements.timerRing) {
+                if (progress < 0.25) {
+                    elements.timerRing.classList.add('danger');
+                    elements.timerRing.classList.remove('warning');
+                } else if (progress < 0.5) {
+                    elements.timerRing.classList.add('warning');
+                    elements.timerRing.classList.remove('danger');
+                }
+            }
+
+            if (remaining > 0) {
+                GameState.roundTimer = requestAnimationFrame(updateTimer);
+            } else {
+                console.log('>>> TIMER COMPLETE! Calling endRound()');
+                endRound();
+            }
+        } catch (error) {
+            console.error('ERROR in updateTimer:', error);
         }
     }
 
+    console.log('>>> Calling first updateTimer frame');
     updateTimer();
 }
 
