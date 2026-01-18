@@ -408,6 +408,8 @@ function initPlayers(count) {
 // ==========================================
 
 function startGameSetup() {
+    console.log('Starting game setup for', GameState.playerCount, 'players');
+
     // Reset game state
     GameState.waitingForFingers = true;
     GameState.allFingersPlaced = false;
@@ -438,6 +440,20 @@ function startGameSetup() {
     if (elements.roundIndicator) {
         elements.roundIndicator.textContent = 'Waiting for players...';
     }
+
+    // Add tap handler to toggle header visibility
+    const gameArea = document.querySelector('#game-screen .game-area');
+    const header = document.querySelector('.game-header');
+    if (gameArea && header) {
+        gameArea.addEventListener('click', (e) => {
+            // Only toggle if not clicking on a circle
+            if (!e.target.closest('.player-circle')) {
+                header.classList.toggle('hidden');
+            }
+        });
+    }
+
+    console.log('Game setup complete. Waiting for all fingers...');
 }
 
 function createCirclesInContainer(container) {
@@ -620,13 +636,18 @@ function handleMouseUp(e, playerId) {
 function checkAllFingersPlaced() {
     // Check if all players have their fingers on circles
     const allTouched = GameState.players.every(player => player.isTouched);
+    const touchedCount = GameState.players.filter(p => p.isTouched).length;
+
+    console.log(`Fingers placed: ${touchedCount}/${GameState.playerCount}, waiting: ${GameState.waitingForFingers}, allPlaced: ${GameState.allFingersPlaced}`);
 
     if (allTouched && !GameState.allFingersPlaced && GameState.waitingForFingers) {
         GameState.allFingersPlaced = true;
+        console.log('All fingers placed! Starting countdown in 500ms...');
 
         // All fingers placed! Start the countdown after a brief moment
         setTimeout(() => {
-            if (GameState.allFingersPlaced) {
+            if (GameState.allFingersPlaced && GameState.waitingForFingers) {
+                console.log('Starting countdown now!');
                 startCountdown();
             }
         }, 500);

@@ -467,6 +467,13 @@ h4 {
   padding: var(--spacing-md);
   background: var(--bg-overlay);
   z-index: 100;
+  transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+.game-header.hidden {
+  transform: translateY(-100%);
+  opacity: 0;
+  pointer-events: none;
 }
 
 .round-indicator {
