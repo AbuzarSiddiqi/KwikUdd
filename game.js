@@ -732,6 +732,7 @@ function startCountdown() {
 // ==========================================
 
 function startGame() {
+    console.log('=== GAME STARTED ===');
     GameState.currentRound = 0;
     GameState.usedItems = [];
 
@@ -793,15 +794,16 @@ function startNextRound() {
 }
 
 function displayItem(item) {
-    if (elements.objectEmoji) {
-        elements.objectEmoji.textContent = item.emoji;
-    }
-    if (elements.objectName) {
-        elements.objectName.textContent = item.name;
-    }
+    console.log('Displaying item:', item.name, item.emoji, 'canFly:', item.canFly);
 
-    // Animate in
+    // Recreate the object display content (since we replaced it earlier)
     if (elements.objectDisplay) {
+        elements.objectDisplay.innerHTML = `
+            <div id="object-emoji" class="object-emoji">${item.emoji}</div>
+            <div id="object-name" class="object-display">${item.name}</div>
+        `;
+
+        // Animate in
         elements.objectDisplay.style.opacity = '0';
         elements.objectDisplay.style.transform = 'scale(0.8)';
 
