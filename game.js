@@ -1,0 +1,1204 @@
+/**
+ * Chidiya Udd - Bird Fly Game
+ * Complete Game Logic for Offline Mode
+ */
+
+// ==========================================
+// ITEMS DATABASE (60+ items)
+// ==========================================
+
+const ITEMS = [
+    // ===== FLYING THINGS (32 items) =====
+
+    // Birds
+    { name: "PARROT", canFly: true, emoji: "🦜" },
+    { name: "EAGLE", canFly: true, emoji: "🦅" },
+    { name: "SPARROW", canFly: true, emoji: "🐦" },
+    { name: "CROW", canFly: true, emoji: "🐦‍⬛" },
+    { name: "PIGEON", canFly: true, emoji: "🕊️" },
+    { name: "PEACOCK", canFly: true, emoji: "🦚" },
+    { name: "SWAN", canFly: true, emoji: "🦢" },
+    { name: "DUCK", canFly: true, emoji: "🦆" },
+    { name: "OWL", canFly: true, emoji: "🦉" },
+    { name: "FLAMINGO", canFly: true, emoji: "🦩" },
+    { name: "VULTURE", canFly: true, emoji: "🦅" },
+    { name: "HAWK", canFly: true, emoji: "🦅" },
+    { name: "HUMMINGBIRD", canFly: true, emoji: "🐦" },
+    { name: "SEAGULL", canFly: true, emoji: "🐦" },
+    { name: "WOODPECKER", canFly: true, emoji: "🐦" },
+    { name: "KINGFISHER", canFly: true, emoji: "🐦" },
+    { name: "CUCKOO", canFly: true, emoji: "🐦" },
+    { name: "STORK", canFly: true, emoji: "🦩" },
+    { name: "PELICAN", canFly: true, emoji: "🦆" },
+    { name: "TOUCAN", canFly: true, emoji: "🦜" },
+
+    // Insects
+    { name: "BUTTERFLY", canFly: true, emoji: "🦋" },
+    { name: "BEE", canFly: true, emoji: "🐝" },
+    { name: "MOSQUITO", canFly: true, emoji: "🦟" },
+    { name: "DRAGONFLY", canFly: true, emoji: "🪰" },
+    { name: "HOUSEFLY", canFly: true, emoji: "🪰" },
+    { name: "WASP", canFly: true, emoji: "🐝" },
+    { name: "MOTH", canFly: true, emoji: "🦋" },
+    { name: "LADYBUG", canFly: true, emoji: "🐞" },
+
+    // Flying vehicles/objects
+    { name: "AIRPLANE", canFly: true, emoji: "✈️" },
+    { name: "HELICOPTER", canFly: true, emoji: "🚁" },
+    { name: "ROCKET", canFly: true, emoji: "🚀" },
+    { name: "KITE", canFly: true, emoji: "🪁" },
+    { name: "DRONE", canFly: true, emoji: "🛸" },
+    { name: "HOT AIR BALLOON", canFly: true, emoji: "🎈" },
+
+    // Flying mammal
+    { name: "BAT", canFly: true, emoji: "🦇" },
+
+    // ===== TRICK ITEMS (birds that can't fly) =====
+    { name: "PENGUIN", canFly: false, emoji: "🐧" },
+    { name: "OSTRICH", canFly: false, emoji: "🦤" },
+    { name: "EMU", canFly: false, emoji: "🦤" },
+    { name: "KIWI BIRD", canFly: false, emoji: "🥝" },
+
+    // ===== NON-FLYING THINGS (32 items) =====
+
+    // Land animals
+    { name: "COW", canFly: false, emoji: "🐄" },
+    { name: "DOG", canFly: false, emoji: "🐕" },
+    { name: "CAT", canFly: false, emoji: "🐈" },
+    { name: "ELEPHANT", canFly: false, emoji: "🐘" },
+    { name: "LION", canFly: false, emoji: "🦁" },
+    { name: "TIGER", canFly: false, emoji: "🐅" },
+    { name: "HORSE", canFly: false, emoji: "🐎" },
+    { name: "RABBIT", canFly: false, emoji: "🐇" },
+    { name: "SNAKE", canFly: false, emoji: "🐍" },
+    { name: "FISH", canFly: false, emoji: "🐟" },
+    { name: "MONKEY", canFly: false, emoji: "🐒" },
+    { name: "BEAR", canFly: false, emoji: "🐻" },
+    { name: "DEER", canFly: false, emoji: "🦌" },
+    { name: "GOAT", canFly: false, emoji: "🐐" },
+    { name: "SHEEP", canFly: false, emoji: "🐑" },
+    { name: "CAMEL", canFly: false, emoji: "🐫" },
+    { name: "ZEBRA", canFly: false, emoji: "🦓" },
+    { name: "KANGAROO", canFly: false, emoji: "🦘" },
+    { name: "PANDA", canFly: false, emoji: "🐼" },
+    { name: "FROG", canFly: false, emoji: "🐸" },
+    { name: "TURTLE", canFly: false, emoji: "🐢" },
+    { name: "CROCODILE", canFly: false, emoji: "🐊" },
+
+    // Vehicles
+    { name: "CAR", canFly: false, emoji: "🚗" },
+    { name: "BUS", canFly: false, emoji: "🚌" },
+    { name: "TRAIN", canFly: false, emoji: "🚂" },
+    { name: "BICYCLE", canFly: false, emoji: "🚲" },
+    { name: "MOTORCYCLE", canFly: false, emoji: "🏍️" },
+    { name: "BOAT", canFly: false, emoji: "⛵" },
+    { name: "SHIP", canFly: false, emoji: "🚢" },
+    { name: "TRUCK", canFly: false, emoji: "🚛" },
+
+    // Objects
+    { name: "TREE", canFly: false, emoji: "🌳" },
+    { name: "FLOWER", canFly: false, emoji: "🌸" },
+    { name: "TABLE", canFly: false, emoji: "🪑" },
+    { name: "BOOK", canFly: false, emoji: "📚" },
+    { name: "PHONE", canFly: false, emoji: "📱" },
+    { name: "BALL", canFly: false, emoji: "⚽" },
+    { name: "HOUSE", canFly: false, emoji: "🏠" },
+    { name: "MOUNTAIN", canFly: false, emoji: "🏔️" }
+];
+
+// ==========================================
+// PLAYER COLORS
+// ==========================================
+
+const PLAYER_COLORS = [
+    { name: 'Red', hex: '#FF5252' },
+    { name: 'Blue', hex: '#2196F3' },
+    { name: 'Green', hex: '#4CAF50' },
+    { name: 'Yellow', hex: '#FFEB3B' },
+    { name: 'Purple', hex: '#9C27B0' },
+    { name: 'Orange', hex: '#FF9800' },
+    { name: 'Pink', hex: '#E91E63' },
+    { name: 'Teal', hex: '#00BCD4' }
+];
+
+// ==========================================
+// GAME STATE
+// ==========================================
+
+const GameState = {
+    // Current screen
+    currentScreen: 'home',
+
+    // Game mode
+    mode: 'offline', // 'offline' or 'online'
+
+    // Players
+    playerCount: 0,
+    players: [], // { id, color, score, isTouched, touchId }
+
+    // Game settings
+    totalRounds: 15,
+    roundDuration: 3500, // ms
+    currentRound: 0,
+
+    // Current round data
+    currentItem: null,
+    roundStartTime: null,
+    roundTimer: null,
+
+    // Used items (to avoid repeats)
+    usedItems: [],
+
+    // Settings
+    soundEnabled: true,
+    vibrationEnabled: true
+};
+
+// ==========================================
+// DOM ELEMENTS
+// ==========================================
+
+let elements = {};
+
+function initElements() {
+    elements = {
+        // Screens
+        screens: document.querySelectorAll('.screen'),
+        homeScreen: document.getElementById('home-screen'),
+        playerSelectScreen: document.getElementById('player-select-screen'),
+        gameSetupScreen: document.getElementById('game-setup-screen'),
+        gameScreen: document.getElementById('game-screen'),
+        resultsScreen: document.getElementById('results-screen'),
+
+        // Online screens
+        onlineMenuScreen: document.getElementById('online-menu-screen'),
+        createRoomScreen: document.getElementById('create-room-screen'),
+        joinRoomScreen: document.getElementById('join-room-screen'),
+        lobbyScreen: document.getElementById('lobby-screen'),
+
+        // Game elements
+        setupCirclesContainer: document.getElementById('setup-circles-container'),
+        gameCirclesContainer: document.getElementById('game-circles-container'),
+        objectDisplay: document.getElementById('object-display'),
+        objectEmoji: document.getElementById('object-emoji'),
+        objectName: document.getElementById('object-name'),
+        roundIndicator: document.getElementById('round-indicator'),
+        timerProgress: document.getElementById('timer-progress'),
+        timerRing: document.getElementById('timer-ring'),
+
+        // Results
+        leaderboard: document.getElementById('leaderboard'),
+
+        // Modals
+        settingsModal: document.getElementById('settings-modal'),
+        howToPlayModal: document.getElementById('how-to-play-modal'),
+
+        // Countdown
+        countdownOverlay: document.getElementById('countdown-overlay'),
+        countdownNumber: document.getElementById('countdown-number'),
+
+        // Confetti container
+        confettiContainer: document.getElementById('confetti-container')
+    };
+}
+
+// ==========================================
+// AUDIO (Web Audio API)
+// ==========================================
+
+let audioContext = null;
+
+function initAudio() {
+    try {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    } catch (e) {
+        console.log('Web Audio API not supported');
+    }
+}
+
+function playSound(type) {
+    if (!GameState.soundEnabled || !audioContext) return;
+
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    switch (type) {
+        case 'countdown':
+            oscillator.frequency.value = 440;
+            gainNode.gain.value = 0.3;
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.1);
+            break;
+        case 'start':
+            oscillator.frequency.value = 880;
+            gainNode.gain.value = 0.3;
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.2);
+            break;
+        case 'correct':
+            oscillator.frequency.value = 523.25; // C5
+            gainNode.gain.value = 0.2;
+            oscillator.start();
+            setTimeout(() => oscillator.frequency.value = 659.25, 100); // E5
+            setTimeout(() => oscillator.frequency.value = 783.99, 200); // G5
+            oscillator.stop(audioContext.currentTime + 0.3);
+            break;
+        case 'wrong':
+            oscillator.type = 'sawtooth';
+            oscillator.frequency.value = 200;
+            gainNode.gain.value = 0.2;
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.15);
+            break;
+        case 'click':
+            oscillator.frequency.value = 600;
+            gainNode.gain.value = 0.1;
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.05);
+            break;
+    }
+}
+
+// ==========================================
+// HAPTIC FEEDBACK
+// ==========================================
+
+function vibrate(pattern) {
+    if (!GameState.vibrationEnabled) return;
+    if ('vibrate' in navigator) {
+        navigator.vibrate(pattern);
+    }
+}
+
+// ==========================================
+// SCREEN NAVIGATION
+// ==========================================
+
+function showScreen(screenId) {
+    elements.screens.forEach(screen => {
+        screen.classList.remove('active');
+    });
+
+    const targetScreen = document.getElementById(screenId);
+    if (targetScreen) {
+        targetScreen.classList.add('active');
+        GameState.currentScreen = screenId;
+
+        // Toggle body class for game mode
+        if (screenId === 'game-screen') {
+            document.body.classList.add('game-active');
+        } else {
+            document.body.classList.remove('game-active');
+        }
+    }
+}
+
+// ==========================================
+// HOME SCREEN
+// ==========================================
+
+function initHomeScreen() {
+    document.getElementById('btn-play-offline')?.addEventListener('click', () => {
+        playSound('click');
+        vibrate(50);
+        GameState.mode = 'offline';
+        showScreen('player-select-screen');
+    });
+
+    document.getElementById('btn-play-online')?.addEventListener('click', () => {
+        playSound('click');
+        vibrate(50);
+        GameState.mode = 'online';
+        showScreen('online-menu-screen');
+    });
+
+    document.getElementById('btn-how-to-play')?.addEventListener('click', () => {
+        playSound('click');
+        openModal('how-to-play-modal');
+    });
+
+    document.getElementById('btn-settings')?.addEventListener('click', () => {
+        playSound('click');
+        openModal('settings-modal');
+    });
+}
+
+// ==========================================
+// PLAYER SELECTION
+// ==========================================
+
+function initPlayerSelection() {
+    const playerGrid = document.getElementById('player-grid');
+    if (!playerGrid) return;
+
+    // Create player count buttons
+    for (let i = 1; i <= 6; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'player-count-btn';
+        btn.innerHTML = `
+      <span>${i}</span>
+      <div class="dots">${createPlayerDots(i)}</div>
+    `;
+        btn.addEventListener('click', () => selectPlayerCount(i));
+        playerGrid.appendChild(btn);
+    }
+
+    document.getElementById('btn-back-home')?.addEventListener('click', () => {
+        playSound('click');
+        showScreen('home-screen');
+    });
+}
+
+function createPlayerDots(count) {
+    let dots = '';
+    for (let i = 0; i < count; i++) {
+        dots += `<span class="dot" style="background: ${PLAYER_COLORS[i].hex}"></span>`;
+    }
+    return dots;
+}
+
+function selectPlayerCount(count) {
+    playSound('click');
+    vibrate(50);
+    GameState.playerCount = count;
+    initPlayers(count);
+    showScreen('game-setup-screen');
+    setupGameArea();
+}
+
+// ==========================================
+// PLAYER INITIALIZATION
+// ==========================================
+
+function initPlayers(count) {
+    GameState.players = [];
+    for (let i = 0; i < count; i++) {
+        GameState.players.push({
+            id: i,
+            color: PLAYER_COLORS[i],
+            score: 0,
+            isTouched: false,
+            touchId: null,
+            action: null // 'lifted' or 'kept'
+        });
+    }
+}
+
+// ==========================================
+// GAME SETUP / CIRCLES
+// ==========================================
+
+function setupGameArea() {
+    // Create circles in the setup screen
+    createCirclesInContainer(elements.setupCirclesContainer);
+
+    // Init ready button
+    const readyBtn = document.getElementById('btn-ready');
+    if (readyBtn) {
+        readyBtn.classList.add('btn-disabled');
+        // Remove old listeners by cloning
+        const newBtn = readyBtn.cloneNode(true);
+        readyBtn.parentNode.replaceChild(newBtn, readyBtn);
+
+        setTimeout(() => {
+            newBtn.classList.remove('btn-disabled');
+        }, 2000);
+
+        newBtn.addEventListener('click', startCountdown);
+    }
+
+    // Back button
+    const backBtn = document.getElementById('btn-back-select');
+    if (backBtn) {
+        const newBackBtn = backBtn.cloneNode(true);
+        backBtn.parentNode.replaceChild(newBackBtn, backBtn);
+        newBackBtn.addEventListener('click', () => {
+            playSound('click');
+            showScreen('player-select-screen');
+        });
+    }
+}
+
+function createCirclesInContainer(container) {
+    if (!container) return;
+
+    container.innerHTML = '';
+    container.className = `circles-container players-${GameState.playerCount}`;
+
+    // Calculate circle positions based on player count
+    const positions = getCirclePositions(GameState.playerCount);
+
+    GameState.players.forEach((player, index) => {
+        const circle = document.createElement('div');
+        circle.className = 'player-circle waiting';
+        circle.id = `player-circle-${player.id}`;
+        circle.style.color = player.color.hex;
+        circle.style.borderColor = player.color.hex;
+        circle.style.left = positions[index].x;
+        circle.style.top = positions[index].y;
+        circle.style.transform = 'translate(-50%, -50%)';
+
+        circle.innerHTML = `
+      <span class="player-label">P${player.id + 1}</span>
+      <span class="player-score" id="score-${player.id}">${player.score}</span>
+    `;
+
+        // Touch events
+        circle.addEventListener('touchstart', (e) => handleTouchStart(e, player.id), { passive: false });
+        circle.addEventListener('touchend', (e) => handleTouchEnd(e, player.id), { passive: false });
+        circle.addEventListener('touchcancel', (e) => handleTouchEnd(e, player.id), { passive: false });
+
+        // Mouse events for desktop testing
+        circle.addEventListener('mousedown', (e) => handleMouseDown(e, player.id));
+        circle.addEventListener('mouseup', (e) => handleMouseUp(e, player.id));
+        circle.addEventListener('mouseleave', (e) => handleMouseUp(e, player.id));
+
+        container.appendChild(circle);
+    });
+}
+
+function getCirclePositions(count) {
+    const positions = [];
+    const centerX = '50%';
+    const centerY = '50%';
+
+    switch (count) {
+        case 1:
+            positions.push({ x: '50%', y: '70%' });
+            break;
+        case 2:
+            positions.push({ x: '30%', y: '70%' });
+            positions.push({ x: '70%', y: '70%' });
+            break;
+        case 3:
+            positions.push({ x: '50%', y: '25%' });
+            positions.push({ x: '25%', y: '75%' });
+            positions.push({ x: '75%', y: '75%' });
+            break;
+        case 4:
+            positions.push({ x: '25%', y: '30%' });
+            positions.push({ x: '75%', y: '30%' });
+            positions.push({ x: '25%', y: '70%' });
+            positions.push({ x: '75%', y: '70%' });
+            break;
+        case 5:
+            // Pentagon formation
+            for (let i = 0; i < 5; i++) {
+                const angle = (i * 72 - 90) * (Math.PI / 180);
+                const radius = 35;
+                const x = 50 + radius * Math.cos(angle);
+                const y = 50 + radius * Math.sin(angle);
+                positions.push({ x: `${x}%`, y: `${y}%` });
+            }
+            break;
+        case 6:
+            // Hexagon formation
+            for (let i = 0; i < 6; i++) {
+                const angle = (i * 60 - 90) * (Math.PI / 180);
+                const radius = 35;
+                const x = 50 + radius * Math.cos(angle);
+                const y = 50 + radius * Math.sin(angle);
+                positions.push({ x: `${x}%`, y: `${y}%` });
+            }
+            break;
+        default:
+            // Default: spread evenly
+            for (let i = 0; i < count; i++) {
+                const angle = (i * (360 / count) - 90) * (Math.PI / 180);
+                const radius = 35;
+                const x = 50 + radius * Math.cos(angle);
+                const y = 50 + radius * Math.sin(angle);
+                positions.push({ x: `${x}%`, y: `${y}%` });
+            }
+    }
+
+    return positions;
+}
+
+// ==========================================
+// TOUCH HANDLING
+// ==========================================
+
+function handleTouchStart(e, playerId) {
+    e.preventDefault();
+
+    const player = GameState.players[playerId];
+    if (!player) return;
+
+    const touch = e.changedTouches[0];
+    player.touchId = touch.identifier;
+    player.isTouched = true;
+
+    updateCircleVisual(playerId, true);
+    vibrate(30);
+}
+
+function handleTouchEnd(e, playerId) {
+    e.preventDefault();
+
+    const player = GameState.players[playerId];
+    if (!player) return;
+
+    // Check if this is the correct touch
+    const touchIds = Array.from(e.changedTouches).map(t => t.identifier);
+    if (!touchIds.includes(player.touchId)) return;
+
+    player.isTouched = false;
+    player.touchId = null;
+
+    // Record action during active round
+    if (GameState.currentRound > 0 && GameState.roundStartTime) {
+        player.action = 'lifted';
+    }
+
+    updateCircleVisual(playerId, false);
+}
+
+function handleMouseDown(e, playerId) {
+    const player = GameState.players[playerId];
+    if (!player) return;
+
+    player.isTouched = true;
+    updateCircleVisual(playerId, true);
+    vibrate(30);
+}
+
+function handleMouseUp(e, playerId) {
+    const player = GameState.players[playerId];
+    if (!player) return;
+
+    if (player.isTouched) {
+        player.isTouched = false;
+
+        if (GameState.currentRound > 0 && GameState.roundStartTime) {
+            player.action = 'lifted';
+        }
+
+        updateCircleVisual(playerId, false);
+    }
+}
+
+function updateCircleVisual(playerId, isTouched) {
+    // Update in both containers
+    const circles = document.querySelectorAll(`#player-circle-${playerId}`);
+    circles.forEach(circle => {
+        if (!circle) return;
+
+        circle.classList.remove('waiting');
+
+        if (isTouched) {
+            circle.classList.add('touched');
+            circle.classList.remove('not-touched');
+        } else {
+            circle.classList.remove('touched');
+            circle.classList.add('not-touched');
+        }
+    });
+}
+
+// ==========================================
+// COUNTDOWN
+// ==========================================
+
+function startCountdown() {
+    playSound('click');
+
+    // Create circles in the game screen BEFORE showing it
+    createCirclesInContainer(elements.gameCirclesContainer);
+
+    showScreen('game-screen');
+
+    const overlay = elements.countdownOverlay;
+    const numberEl = elements.countdownNumber;
+
+    if (!overlay || !numberEl) return;
+
+    overlay.classList.add('active');
+
+    let count = 3;
+
+    function showNumber() {
+        if (count > 0) {
+            numberEl.textContent = count;
+            numberEl.className = 'countdown-number';
+            // Force reflow for animation
+            void numberEl.offsetWidth;
+            numberEl.style.animation = 'none';
+            void numberEl.offsetWidth;
+            numberEl.style.animation = 'countdownPop 1s ease-out forwards';
+
+            playSound('countdown');
+            vibrate(100);
+
+            count--;
+            setTimeout(showNumber, 1000);
+        } else {
+            numberEl.textContent = 'GO!';
+            numberEl.className = 'countdown-text';
+            playSound('start');
+            vibrate([100, 50, 100]);
+
+            setTimeout(() => {
+                overlay.classList.remove('active');
+                startGame();
+            }, 500);
+        }
+    }
+
+    showNumber();
+}
+
+// ==========================================
+// GAME LOGIC
+// ==========================================
+
+function startGame() {
+    GameState.currentRound = 0;
+    GameState.usedItems = [];
+
+    // Reset all player scores
+    GameState.players.forEach(player => {
+        player.score = 0;
+        player.action = null;
+        updateScoreDisplay(player.id);
+    });
+
+    startNextRound();
+}
+
+function startNextRound() {
+    GameState.currentRound++;
+
+    if (GameState.currentRound > GameState.totalRounds) {
+        endGame();
+        return;
+    }
+
+    // Update round indicator
+    if (elements.roundIndicator) {
+        elements.roundIndicator.textContent = `Round ${GameState.currentRound}/${GameState.totalRounds}`;
+    }
+
+    // Select random item
+    const availableItems = ITEMS.filter(item => !GameState.usedItems.includes(item));
+
+    // Ensure a good mix of flying/non-flying
+    let itemPool = availableItems;
+    if (availableItems.length > 10) {
+        const flyingItems = availableItems.filter(i => i.canFly);
+        const nonFlyingItems = availableItems.filter(i => !i.canFly);
+
+        // Alternate roughly
+        if (GameState.currentRound % 2 === 0 && flyingItems.length > 0) {
+            itemPool = flyingItems;
+        } else if (nonFlyingItems.length > 0) {
+            itemPool = nonFlyingItems;
+        }
+    }
+
+    const randomItem = itemPool[Math.floor(Math.random() * itemPool.length)];
+    GameState.currentItem = randomItem;
+    GameState.usedItems.push(randomItem);
+
+    // Reset player actions
+    GameState.players.forEach(player => {
+        player.action = null;
+    });
+
+    // Display the item
+    displayItem(randomItem);
+
+    // Start timer
+    GameState.roundStartTime = Date.now();
+    startRoundTimer();
+}
+
+function displayItem(item) {
+    if (elements.objectEmoji) {
+        elements.objectEmoji.textContent = item.emoji;
+    }
+    if (elements.objectName) {
+        elements.objectName.textContent = item.name;
+    }
+
+    // Animate in
+    if (elements.objectDisplay) {
+        elements.objectDisplay.style.opacity = '0';
+        elements.objectDisplay.style.transform = 'scale(0.8)';
+
+        requestAnimationFrame(() => {
+            elements.objectDisplay.style.transition = 'all 0.3s ease-out';
+            elements.objectDisplay.style.opacity = '1';
+            elements.objectDisplay.style.transform = 'scale(1)';
+        });
+    }
+}
+
+function startRoundTimer() {
+    const duration = GameState.roundDuration;
+    const startTime = Date.now();
+    const circumference = 565.48; // 2 * PI * 90
+
+    if (elements.timerRing) {
+        elements.timerRing.classList.remove('warning', 'danger');
+    }
+
+    function updateTimer() {
+        const elapsed = Date.now() - startTime;
+        const remaining = Math.max(0, duration - elapsed);
+        const progress = remaining / duration;
+
+        // Update timer ring
+        if (elements.timerProgress) {
+            const offset = circumference * (1 - progress);
+            elements.timerProgress.style.strokeDashoffset = offset;
+        }
+
+        // Color changes
+        if (elements.timerRing) {
+            if (progress < 0.25) {
+                elements.timerRing.classList.add('danger');
+                elements.timerRing.classList.remove('warning');
+            } else if (progress < 0.5) {
+                elements.timerRing.classList.add('warning');
+                elements.timerRing.classList.remove('danger');
+            }
+        }
+
+        if (remaining > 0) {
+            GameState.roundTimer = requestAnimationFrame(updateTimer);
+        } else {
+            endRound();
+        }
+    }
+
+    updateTimer();
+}
+
+function endRound() {
+    if (GameState.roundTimer) {
+        cancelAnimationFrame(GameState.roundTimer);
+    }
+
+    const canFly = GameState.currentItem.canFly;
+
+    // Calculate scores for each player
+    GameState.players.forEach(player => {
+        const action = player.action || 'kept'; // No action = kept finger down
+        let points = 0;
+        let correct = false;
+
+        if (canFly) {
+            // Should have lifted
+            if (action === 'lifted') {
+                points = 10;
+                correct = true;
+            } else {
+                points = -5;
+            }
+        } else {
+            // Should have kept down
+            if (action === 'kept') {
+                points = 10;
+                correct = true;
+            } else {
+                points = -5;
+            }
+        }
+
+        // Update score (minimum 0)
+        player.score = Math.max(0, player.score + points);
+
+        // Show feedback
+        showPlayerFeedback(player.id, correct, points);
+        updateScoreDisplay(player.id);
+    });
+
+    // Reset round state
+    GameState.roundStartTime = null;
+
+    // Wait before next round
+    setTimeout(() => {
+        startNextRound();
+    }, 2000);
+}
+
+function showPlayerFeedback(playerId, correct, points) {
+    // Find circle in the game screen container
+    const container = elements.gameCirclesContainer;
+    const circle = container?.querySelector(`#player-circle-${playerId}`);
+    if (!circle) return;
+
+    // Add animation class
+    circle.classList.remove('bounce', 'shake');
+    void circle.offsetWidth; // Force reflow
+
+    if (correct) {
+        circle.classList.add('bounce');
+        playSound('correct');
+        vibrate([50, 30, 50]);
+    } else {
+        circle.classList.add('shake');
+        playSound('wrong');
+        vibrate(150);
+    }
+
+    // Show result indicator
+    const indicator = document.createElement('div');
+    indicator.className = `result-indicator ${correct ? 'correct' : 'wrong'}`;
+    indicator.innerHTML = correct
+        ? `<span>✓</span><span>+${points}</span>`
+        : `<span>✗</span><span>${points}</span>`;
+
+    indicator.style.left = circle.style.left;
+    indicator.style.top = circle.style.top;
+
+    if (container) {
+        container.appendChild(indicator);
+    }
+
+    setTimeout(() => {
+        indicator.remove();
+        circle.classList.remove('bounce', 'shake');
+    }, 1500);
+}
+
+function updateScoreDisplay(playerId) {
+    // Update score in game container
+    const container = elements.gameCirclesContainer;
+    const scoreEl = container?.querySelector(`#score-${playerId}`);
+    const player = GameState.players[playerId];
+
+    if (scoreEl && player) {
+        scoreEl.textContent = player.score;
+
+        // Animate score change
+        scoreEl.style.transform = 'scale(1.3)';
+        setTimeout(() => {
+            scoreEl.style.transform = 'scale(1)';
+        }, 200);
+    }
+}
+
+// ==========================================
+// GAME END / RESULTS
+// ==========================================
+
+function endGame() {
+    showScreen('results-screen');
+
+    // Sort players by score
+    const rankings = [...GameState.players].sort((a, b) => b.score - a.score);
+
+    // Display leaderboard
+    if (elements.leaderboard) {
+        elements.leaderboard.innerHTML = '';
+
+        rankings.forEach((player, index) => {
+            const rank = index + 1;
+            const item = document.createElement('div');
+            item.className = `leaderboard-item ${rank === 1 ? 'winner' : ''}`;
+
+            let rankDisplay;
+            if (rank === 1) rankDisplay = '<span class="rank-medal">🥇</span>';
+            else if (rank === 2) rankDisplay = '<span class="rank-medal">🥈</span>';
+            else if (rank === 3) rankDisplay = '<span class="rank-medal">🥉</span>';
+            else rankDisplay = `<span class="rank">${rank}</span>`;
+
+            item.innerHTML = `
+        ${rankDisplay}
+        <div class="player-color" style="background: ${player.color.hex}"></div>
+        <span class="player-name">Player ${player.id + 1}</span>
+        <span class="final-score">${player.score}</span>
+      `;
+
+            elements.leaderboard.appendChild(item);
+        });
+    }
+
+    // Show confetti for winner
+    if (rankings[0].score > 0) {
+        createConfetti();
+    }
+
+    // Setup buttons
+    document.getElementById('btn-play-again')?.addEventListener('click', () => {
+        playSound('click');
+        vibrate(50);
+        showScreen('game-setup-screen');
+        setupGameArea();
+    });
+
+    document.getElementById('btn-main-menu')?.addEventListener('click', () => {
+        playSound('click');
+        vibrate(50);
+        showScreen('home-screen');
+    });
+}
+
+// ==========================================
+// CONFETTI
+// ==========================================
+
+function createConfetti() {
+    if (!elements.confettiContainer) return;
+
+    elements.confettiContainer.innerHTML = '';
+
+    const colors = ['#FF5252', '#2196F3', '#4CAF50', '#FFEB3B', '#9C27B0', '#FF9800'];
+
+    for (let i = 0; i < 50; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.left = Math.random() * 100 + '%';
+        confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.animationDelay = Math.random() * 2 + 's';
+        confetti.style.animationDuration = (2 + Math.random() * 2) + 's';
+
+        elements.confettiContainer.appendChild(confetti);
+    }
+
+    // Clean up after animation
+    setTimeout(() => {
+        if (elements.confettiContainer) {
+            elements.confettiContainer.innerHTML = '';
+        }
+    }, 5000);
+}
+
+// ==========================================
+// MODALS
+// ==========================================
+
+function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.add('active');
+    }
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
+
+function initModals() {
+    // Close buttons
+    document.querySelectorAll('.modal-close').forEach(btn => {
+        btn.addEventListener('click', () => {
+            playSound('click');
+            const modal = btn.closest('.modal-overlay');
+            if (modal) {
+                modal.classList.remove('active');
+            }
+        });
+    });
+
+    // Click outside to close
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                overlay.classList.remove('active');
+            }
+        });
+    });
+
+    // Settings toggles
+    initSettingsToggles();
+}
+
+function initSettingsToggles() {
+    const soundToggle = document.getElementById('toggle-sound');
+    const vibrationToggle = document.getElementById('toggle-vibration');
+
+    // Load saved settings
+    const savedSettings = loadSettings();
+    GameState.soundEnabled = savedSettings.sound;
+    GameState.vibrationEnabled = savedSettings.vibration;
+
+    if (soundToggle) {
+        soundToggle.classList.toggle('active', GameState.soundEnabled);
+        soundToggle.addEventListener('click', () => {
+            GameState.soundEnabled = !GameState.soundEnabled;
+            soundToggle.classList.toggle('active', GameState.soundEnabled);
+            saveSettings();
+            if (GameState.soundEnabled) playSound('click');
+        });
+    }
+
+    if (vibrationToggle) {
+        vibrationToggle.classList.toggle('active', GameState.vibrationEnabled);
+        vibrationToggle.addEventListener('click', () => {
+            GameState.vibrationEnabled = !GameState.vibrationEnabled;
+            vibrationToggle.classList.toggle('active', GameState.vibrationEnabled);
+            saveSettings();
+            if (GameState.vibrationEnabled) vibrate(50);
+        });
+    }
+}
+
+// ==========================================
+// LOCAL STORAGE
+// ==========================================
+
+function saveSettings() {
+    try {
+        localStorage.setItem('chidiya-udd-settings', JSON.stringify({
+            sound: GameState.soundEnabled,
+            vibration: GameState.vibrationEnabled
+        }));
+    } catch (e) {
+        console.log('Could not save settings');
+    }
+}
+
+function loadSettings() {
+    try {
+        const saved = localStorage.getItem('chidiya-udd-settings');
+        if (saved) {
+            return JSON.parse(saved);
+        }
+    } catch (e) {
+        console.log('Could not load settings');
+    }
+    return { sound: true, vibration: true };
+}
+
+function saveStats(winner) {
+    try {
+        const stats = JSON.parse(localStorage.getItem('chidiya-udd-stats') || '{}');
+        stats.gamesPlayed = (stats.gamesPlayed || 0) + 1;
+        stats.highScore = Math.max(stats.highScore || 0, winner.score);
+        localStorage.setItem('chidiya-udd-stats', JSON.stringify(stats));
+    } catch (e) {
+        console.log('Could not save stats');
+    }
+}
+
+// ==========================================
+// PAUSE / RESUME
+// ==========================================
+
+function pauseGame() {
+    if (GameState.roundTimer) {
+        cancelAnimationFrame(GameState.roundTimer);
+    }
+    // Show pause modal
+}
+
+function resumeGame() {
+    // Resume timer from where it left off
+}
+
+// ==========================================
+// ONLINE MODE HANDLERS
+// ==========================================
+
+function initOnlineMode() {
+    // Create room button
+    document.getElementById('btn-create-room')?.addEventListener('click', () => {
+        playSound('click');
+        showScreen('create-room-screen');
+        if (typeof createRoom === 'function') {
+            createRoom();
+        }
+    });
+
+    // Join room button
+    document.getElementById('btn-join-room')?.addEventListener('click', () => {
+        playSound('click');
+        showScreen('join-room-screen');
+    });
+
+    // Back button
+    document.getElementById('btn-back-online-menu')?.addEventListener('click', () => {
+        playSound('click');
+        showScreen('online-menu-screen');
+    });
+
+    document.getElementById('btn-back-home-online')?.addEventListener('click', () => {
+        playSound('click');
+        showScreen('home-screen');
+    });
+
+    // Join room form
+    document.getElementById('btn-join-submit')?.addEventListener('click', () => {
+        const input = document.getElementById('room-code-input');
+        if (input && input.value.length >= 4) {
+            playSound('click');
+            if (typeof joinRoom === 'function') {
+                joinRoom(input.value.toUpperCase());
+            }
+        }
+    });
+
+    // Room code input formatting
+    const roomInput = document.getElementById('room-code-input');
+    if (roomInput) {
+        roomInput.addEventListener('input', (e) => {
+            e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+        });
+    }
+}
+
+// ==========================================
+// INITIALIZATION
+// ==========================================
+
+function init() {
+    initElements();
+    initAudio();
+    initHomeScreen();
+    initPlayerSelection();
+    initModals();
+    initOnlineMode();
+
+    // Show home screen
+    showScreen('home-screen');
+
+    // Prevent default touch behaviors on game container
+    document.addEventListener('touchmove', (e) => {
+        if (document.body.classList.contains('game-active')) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    // Prevent context menu on long press
+    document.addEventListener('contextmenu', (e) => {
+        if (document.body.classList.contains('game-active')) {
+            e.preventDefault();
+        }
+    });
+
+    console.log('Chidiya Udd game initialized!');
+}
+
+// Initialize on DOM ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
+
+// Export for online mode integration
+window.ChidiyaUdd = {
+    GameState,
+    ITEMS,
+    PLAYER_COLORS,
+    showScreen,
+    initPlayers,
+    setupGameArea,
+    startCountdown,
+    displayItem,
+    endRound,
+    showPlayerFeedback,
+    updateScoreDisplay,
+    endGame,
+    playSound,
+    vibrate
+};
