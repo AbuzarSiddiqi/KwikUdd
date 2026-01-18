@@ -1028,8 +1028,8 @@ function endGame() {
     document.getElementById('btn-play-again')?.addEventListener('click', () => {
         playSound('click');
         vibrate(50);
-        showScreen('game-setup-screen');
-        setupGameArea();
+        showScreen('game-screen');
+        startGameSetup();
     });
 
     document.getElementById('btn-main-menu')?.addEventListener('click', () => {
@@ -1292,7 +1292,7 @@ window.ChidiyaUdd = {
     PLAYER_COLORS,
     showScreen,
     initPlayers,
-    setupGameArea,
+    startGameSetup,
     startCountdown,
     displayItem,
     endRound,

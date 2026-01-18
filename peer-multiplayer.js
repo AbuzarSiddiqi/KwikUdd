@@ -335,7 +335,7 @@ function setupOnlineGame() {
     });
 
     ChidiyaUdd.showScreen('game-screen');
-    ChidiyaUdd.setupGameArea();
+    ChidiyaUdd.startGameSetup();
 
     // Show countdown
     showOnlineCountdown();
