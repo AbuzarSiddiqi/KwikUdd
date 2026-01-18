@@ -138,7 +138,7 @@ const GameState = {
 
     // Game settings
     totalRounds: 15,
-    roundDuration: 1500, // 1.5 seconds for response (fast!)
+    roundDuration: 1000, // 1 second for response
     currentRound: 0,
 
     // Current round data
@@ -748,6 +748,7 @@ function startGame() {
 
 function startNextRound() {
     GameState.currentRound++;
+    console.log('=== STARTING ROUND', GameState.currentRound, 'of', GameState.totalRounds, '===');
 
     if (GameState.currentRound > GameState.totalRounds) {
         endGame();
