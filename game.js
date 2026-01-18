@@ -354,6 +354,16 @@ function initPlayerSelection() {
         playSound('click');
         showScreen('home-screen');
     });
+
+    // Back button from game screen
+    document.getElementById('btn-back-game')?.addEventListener('click', () => {
+        playSound('click');
+        GameState.waitingForFingers = false;
+        if (GameState.roundTimer) {
+            cancelAnimationFrame(GameState.roundTimer);
+        }
+        showScreen('player-select-screen');
+    });
 }
 
 function createPlayerDots(count) {
@@ -369,8 +379,10 @@ function selectPlayerCount(count) {
     vibrate(50);
     GameState.playerCount = count;
     initPlayers(count);
-    showScreen('game-setup-screen');
-    setupGameArea();
+
+    // Go directly to game screen
+    showScreen('game-screen');
+    startGameSetup();
 }
 
 // ==========================================
@@ -395,11 +407,12 @@ function initPlayers(count) {
 // GAME SETUP / CIRCLES
 // ==========================================
 
-function setupGameArea() {
+function startGameSetup() {
     // Reset game state
     GameState.waitingForFingers = true;
     GameState.allFingersPlaced = false;
     GameState.currentRound = 0;
+    GameState.usedItems = [];
 
     // Reset player touch states
     GameState.players.forEach(player => {
@@ -409,36 +422,29 @@ function setupGameArea() {
         player.score = 0;
     });
 
-    // Create circles in the setup screen
-    createCirclesInContainer(elements.setupCirclesContainer);
+    // Create circles directly in the game screen container
+    createCirclesInContainer(elements.gameCirclesContainer);
 
-    // Update instruction text
-    const subtitle = document.querySelector('#game-setup-screen .subtitle');
-    if (subtitle) {
-        subtitle.textContent = 'All players place your fingers on your circles';
+    // Hide the object display initially, show instruction
+    if (elements.objectDisplay) {
+        elements.objectDisplay.innerHTML = `
+            <div style="font-size: 1.2rem; color: #666; padding: 20px; text-align: center;">
+                👆 All players put your finger on your circle
+            </div>
+        `;
     }
 
-    // Hide ready button, show waiting message
-    const readyBtn = document.getElementById('btn-ready');
-    if (readyBtn) {
-        readyBtn.style.display = 'none';
-    }
-
-    // Back button
-    const backBtn = document.getElementById('btn-back-select');
-    if (backBtn) {
-        const newBackBtn = backBtn.cloneNode(true);
-        backBtn.parentNode.replaceChild(newBackBtn, backBtn);
-        newBackBtn.addEventListener('click', () => {
-            playSound('click');
-            GameState.waitingForFingers = false;
-            showScreen('player-select-screen');
-        });
+    // Update round indicator
+    if (elements.roundIndicator) {
+        elements.roundIndicator.textContent = 'Waiting for players...';
     }
 }
 
 function createCirclesInContainer(container) {
-    if (!container) return;
+    if (!container) {
+        console.error('Container not found!');
+        return;
+    }
 
     container.innerHTML = '';
     container.className = `circles-container players-${GameState.playerCount}`;
@@ -457,9 +463,9 @@ function createCirclesInContainer(container) {
         circle.style.transform = 'translate(-50%, -50%)';
 
         circle.innerHTML = `
-      <span class="player-label">P${player.id + 1}</span>
-      <span class="player-score" id="score-${player.id}">${player.score}</span>
-    `;
+            <span class="player-label">P${player.id + 1}</span>
+            <span class="player-score" id="score-${player.id}">${player.score}</span>
+        `;
 
         // Touch events
         circle.addEventListener('touchstart', (e) => handleTouchStart(e, player.id), { passive: false });
@@ -473,6 +479,8 @@ function createCirclesInContainer(container) {
 
         container.appendChild(circle);
     });
+
+    console.log(`Created ${GameState.playerCount} circles in container`);
 }
 
 function getCirclePositions(count) {
@@ -653,10 +661,10 @@ function startCountdown() {
 
     playSound('click');
 
-    // Create circles in the game screen BEFORE showing it
-    createCirclesInContainer(elements.gameCirclesContainer);
-
-    showScreen('game-screen');
+    // Update instruction to show countdown starting
+    if (elements.roundIndicator) {
+        elements.roundIndicator.textContent = 'Get ready!';
+    }
 
     const overlay = elements.countdownOverlay;
     const numberEl = elements.countdownNumber;
