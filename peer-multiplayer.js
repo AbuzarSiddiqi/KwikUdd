@@ -429,10 +429,10 @@ function displayRound(item, round) {
     ChidiyaUdd.displayItem(item);
 
     // Start timer
-    startRoundTimer(ChidiyaUdd.GameState.roundDuration);
+    startOnlineRoundTimer(ChidiyaUdd.GameState.roundDuration);
 }
 
-function startRoundTimer(duration) {
+function startOnlineRoundTimer(duration) {
     const timerProgress = document.getElementById('timer-progress');
     const timerRing = document.getElementById('timer-ring');
     const circumference = 565.48;
@@ -732,7 +732,7 @@ function clientStartRound(data) {
     displayRound(data.item, data.round);
 
     // Start local timer
-    startRoundTimer(data.duration);
+    startOnlineRoundTimer(data.duration);
 
     // Reset touch tracking for this round
     ChidiyaUdd.GameState.players.forEach(player => {
