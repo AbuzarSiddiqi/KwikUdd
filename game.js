@@ -138,13 +138,17 @@ const GameState = {
 
     // Game settings
     totalRounds: 15,
-    roundDuration: 3500, // ms
+    roundDuration: 1500, // 1.5 seconds for response (fast!)
     currentRound: 0,
 
     // Current round data
     currentItem: null,
     roundStartTime: null,
     roundTimer: null,
+
+    // Waiting for all fingers
+    allFingersPlaced: false,
+    waitingForFingers: false,
 
     // Used items (to avoid repeats)
     usedItems: [],
@@ -392,22 +396,32 @@ function initPlayers(count) {
 // ==========================================
 
 function setupGameArea() {
+    // Reset game state
+    GameState.waitingForFingers = true;
+    GameState.allFingersPlaced = false;
+    GameState.currentRound = 0;
+
+    // Reset player touch states
+    GameState.players.forEach(player => {
+        player.isTouched = false;
+        player.touchId = null;
+        player.action = null;
+        player.score = 0;
+    });
+
     // Create circles in the setup screen
     createCirclesInContainer(elements.setupCirclesContainer);
 
-    // Init ready button
+    // Update instruction text
+    const subtitle = document.querySelector('#game-setup-screen .subtitle');
+    if (subtitle) {
+        subtitle.textContent = 'All players place your fingers on your circles';
+    }
+
+    // Hide ready button, show waiting message
     const readyBtn = document.getElementById('btn-ready');
     if (readyBtn) {
-        readyBtn.classList.add('btn-disabled');
-        // Remove old listeners by cloning
-        const newBtn = readyBtn.cloneNode(true);
-        readyBtn.parentNode.replaceChild(newBtn, readyBtn);
-
-        setTimeout(() => {
-            newBtn.classList.remove('btn-disabled');
-        }, 2000);
-
-        newBtn.addEventListener('click', startCountdown);
+        readyBtn.style.display = 'none';
     }
 
     // Back button
@@ -417,6 +431,7 @@ function setupGameArea() {
         backBtn.parentNode.replaceChild(newBackBtn, backBtn);
         newBackBtn.addEventListener('click', () => {
             playSound('click');
+            GameState.waitingForFingers = false;
             showScreen('player-select-screen');
         });
     }
@@ -462,53 +477,54 @@ function createCirclesInContainer(container) {
 
 function getCirclePositions(count) {
     const positions = [];
-    const centerX = '50%';
-    const centerY = '50%';
 
+    // Position circles around the edges of the screen
+    // to leave center clear for the object name display
     switch (count) {
         case 1:
-            positions.push({ x: '50%', y: '70%' });
+            // Single player at bottom center
+            positions.push({ x: '50%', y: '85%' });
             break;
         case 2:
-            positions.push({ x: '30%', y: '70%' });
-            positions.push({ x: '70%', y: '70%' });
+            // Two players: one at top, one at bottom
+            positions.push({ x: '50%', y: '12%' });  // Top
+            positions.push({ x: '50%', y: '88%' });  // Bottom
             break;
         case 3:
-            positions.push({ x: '50%', y: '25%' });
-            positions.push({ x: '25%', y: '75%' });
-            positions.push({ x: '75%', y: '75%' });
+            // Three players: top, bottom-left, bottom-right
+            positions.push({ x: '50%', y: '10%' });  // Top center
+            positions.push({ x: '15%', y: '85%' });  // Bottom left
+            positions.push({ x: '85%', y: '85%' });  // Bottom right
             break;
         case 4:
-            positions.push({ x: '25%', y: '30%' });
-            positions.push({ x: '75%', y: '30%' });
-            positions.push({ x: '25%', y: '70%' });
-            positions.push({ x: '75%', y: '70%' });
+            // Four players: corners
+            positions.push({ x: '15%', y: '12%' });  // Top left
+            positions.push({ x: '85%', y: '12%' });  // Top right
+            positions.push({ x: '15%', y: '88%' });  // Bottom left
+            positions.push({ x: '85%', y: '88%' });  // Bottom right
             break;
         case 5:
-            // Pentagon formation
-            for (let i = 0; i < 5; i++) {
-                const angle = (i * 72 - 90) * (Math.PI / 180);
-                const radius = 35;
-                const x = 50 + radius * Math.cos(angle);
-                const y = 50 + radius * Math.sin(angle);
-                positions.push({ x: `${x}%`, y: `${y}%` });
-            }
+            // Five players: two at top, three at bottom
+            positions.push({ x: '25%', y: '10%' });  // Top left
+            positions.push({ x: '75%', y: '10%' });  // Top right
+            positions.push({ x: '10%', y: '85%' });  // Bottom left
+            positions.push({ x: '50%', y: '88%' });  // Bottom center
+            positions.push({ x: '90%', y: '85%' });  // Bottom right
             break;
         case 6:
-            // Hexagon formation
-            for (let i = 0; i < 6; i++) {
-                const angle = (i * 60 - 90) * (Math.PI / 180);
-                const radius = 35;
-                const x = 50 + radius * Math.cos(angle);
-                const y = 50 + radius * Math.sin(angle);
-                positions.push({ x: `${x}%`, y: `${y}%` });
-            }
+            // Six players: three at top, three at bottom
+            positions.push({ x: '15%', y: '10%' });  // Top left
+            positions.push({ x: '50%', y: '8%' });   // Top center
+            positions.push({ x: '85%', y: '10%' });  // Top right
+            positions.push({ x: '15%', y: '88%' });  // Bottom left
+            positions.push({ x: '50%', y: '92%' });  // Bottom center
+            positions.push({ x: '85%', y: '88%' });  // Bottom right
             break;
         default:
-            // Default: spread evenly
+            // Fallback: spread evenly around edges
             for (let i = 0; i < count; i++) {
                 const angle = (i * (360 / count) - 90) * (Math.PI / 180);
-                const radius = 35;
+                const radius = 40;
                 const x = 50 + radius * Math.cos(angle);
                 const y = 50 + radius * Math.sin(angle);
                 positions.push({ x: `${x}%`, y: `${y}%` });
@@ -534,6 +550,9 @@ function handleTouchStart(e, playerId) {
 
     updateCircleVisual(playerId, true);
     vibrate(30);
+
+    // Check if all fingers are placed
+    checkAllFingersPlaced();
 }
 
 function handleTouchEnd(e, playerId) {
@@ -554,6 +573,9 @@ function handleTouchEnd(e, playerId) {
         player.action = 'lifted';
     }
 
+    // Reset all fingers placed flag
+    GameState.allFingersPlaced = false;
+
     updateCircleVisual(playerId, false);
 }
 
@@ -564,6 +586,9 @@ function handleMouseDown(e, playerId) {
     player.isTouched = true;
     updateCircleVisual(playerId, true);
     vibrate(30);
+
+    // Check if all fingers are placed
+    checkAllFingersPlaced();
 }
 
 function handleMouseUp(e, playerId) {
@@ -577,7 +602,26 @@ function handleMouseUp(e, playerId) {
             player.action = 'lifted';
         }
 
+        // Reset all fingers placed flag
+        GameState.allFingersPlaced = false;
+
         updateCircleVisual(playerId, false);
+    }
+}
+
+function checkAllFingersPlaced() {
+    // Check if all players have their fingers on circles
+    const allTouched = GameState.players.every(player => player.isTouched);
+
+    if (allTouched && !GameState.allFingersPlaced && GameState.waitingForFingers) {
+        GameState.allFingersPlaced = true;
+
+        // All fingers placed! Start the countdown after a brief moment
+        setTimeout(() => {
+            if (GameState.allFingersPlaced) {
+                startCountdown();
+            }
+        }, 500);
     }
 }
 
@@ -604,6 +648,9 @@ function updateCircleVisual(playerId, isTouched) {
 // ==========================================
 
 function startCountdown() {
+    // Stop waiting for fingers now that we're into countdown
+    GameState.waitingForFingers = false;
+
     playSound('click');
 
     // Create circles in the game screen BEFORE showing it
