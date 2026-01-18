@@ -732,66 +732,87 @@ function startCountdown() {
 // ==========================================
 
 function startGame() {
-    console.log('=== GAME STARTED ===');
-    GameState.currentRound = 0;
-    GameState.usedItems = [];
+    try {
+        console.log('=== GAME STARTED ===');
+        console.log('elements.timerProgress:', elements.timerProgress);
+        console.log('elements.objectDisplay:', elements.objectDisplay);
 
-    // Reset all player scores
-    GameState.players.forEach(player => {
-        player.score = 0;
-        player.action = null;
-        updateScoreDisplay(player.id);
-    });
+        GameState.currentRound = 0;
+        GameState.usedItems = [];
 
-    startNextRound();
+        // Reset all player scores
+        GameState.players.forEach(player => {
+            player.score = 0;
+            player.action = null;
+            updateScoreDisplay(player.id);
+        });
+
+        console.log('Calling startNextRound...');
+        startNextRound();
+    } catch (error) {
+        console.error('ERROR in startGame:', error);
+        alert('Game error: ' + error.message);
+    }
 }
 
 function startNextRound() {
-    GameState.currentRound++;
-    console.log('=== STARTING ROUND', GameState.currentRound, 'of', GameState.totalRounds, '===');
+    try {
+        GameState.currentRound++;
+        console.log('=== STARTING ROUND', GameState.currentRound, 'of', GameState.totalRounds, '===');
 
-    if (GameState.currentRound > GameState.totalRounds) {
-        endGame();
-        return;
-    }
-
-    // Update round indicator
-    if (elements.roundIndicator) {
-        elements.roundIndicator.textContent = `Round ${GameState.currentRound}/${GameState.totalRounds}`;
-    }
-
-    // Select random item
-    const availableItems = ITEMS.filter(item => !GameState.usedItems.includes(item));
-
-    // Ensure a good mix of flying/non-flying
-    let itemPool = availableItems;
-    if (availableItems.length > 10) {
-        const flyingItems = availableItems.filter(i => i.canFly);
-        const nonFlyingItems = availableItems.filter(i => !i.canFly);
-
-        // Alternate roughly
-        if (GameState.currentRound % 2 === 0 && flyingItems.length > 0) {
-            itemPool = flyingItems;
-        } else if (nonFlyingItems.length > 0) {
-            itemPool = nonFlyingItems;
+        if (GameState.currentRound > GameState.totalRounds) {
+            endGame();
+            return;
         }
+
+        // Update round indicator
+        console.log('Updating round indicator...');
+        if (elements.roundIndicator) {
+            elements.roundIndicator.textContent = `Round ${GameState.currentRound}/${GameState.totalRounds}`;
+        }
+
+        // Select random item
+        console.log('Selecting random item...');
+        const availableItems = ITEMS.filter(item => !GameState.usedItems.includes(item));
+        console.log('Available items:', availableItems.length);
+
+        // Ensure a good mix of flying/non-flying
+        let itemPool = availableItems;
+        if (availableItems.length > 10) {
+            const flyingItems = availableItems.filter(i => i.canFly);
+            const nonFlyingItems = availableItems.filter(i => !i.canFly);
+
+            // Alternate roughly
+            if (GameState.currentRound % 2 === 0 && flyingItems.length > 0) {
+                itemPool = flyingItems;
+            } else if (nonFlyingItems.length > 0) {
+                itemPool = nonFlyingItems;
+            }
+        }
+
+        const randomItem = itemPool[Math.floor(Math.random() * itemPool.length)];
+        console.log('Selected item:', randomItem);
+        GameState.currentItem = randomItem;
+        GameState.usedItems.push(randomItem);
+
+        // Reset player actions
+        GameState.players.forEach(player => {
+            player.action = null;
+        });
+
+        // Display the item
+        console.log('Calling displayItem...');
+        displayItem(randomItem);
+
+        // Start timer
+        console.log('Calling startRoundTimer...');
+        GameState.roundStartTime = Date.now();
+        startRoundTimer();
+        console.log('startRoundTimer called successfully');
+    } catch (error) {
+        console.error('ERROR in startNextRound:', error);
+        alert('Round error: ' + error.message);
     }
-
-    const randomItem = itemPool[Math.floor(Math.random() * itemPool.length)];
-    GameState.currentItem = randomItem;
-    GameState.usedItems.push(randomItem);
-
-    // Reset player actions
-    GameState.players.forEach(player => {
-        player.action = null;
-    });
-
-    // Display the item
-    displayItem(randomItem);
-
-    // Start timer
-    GameState.roundStartTime = Date.now();
-    startRoundTimer();
 }
 
 function displayItem(item) {
