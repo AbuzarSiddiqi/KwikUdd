@@ -816,12 +816,19 @@ function displayItem(item) {
 }
 
 function startRoundTimer() {
+    console.log('Starting round timer for', GameState.roundDuration, 'ms');
+
     const duration = GameState.roundDuration;
     const startTime = Date.now();
     const circumference = 565.48; // 2 * PI * 90
 
     if (elements.timerRing) {
         elements.timerRing.classList.remove('warning', 'danger');
+    }
+
+    // Reset timer progress
+    if (elements.timerProgress) {
+        elements.timerProgress.style.strokeDashoffset = '0';
     }
 
     function updateTimer() {
@@ -849,6 +856,7 @@ function startRoundTimer() {
         if (remaining > 0) {
             GameState.roundTimer = requestAnimationFrame(updateTimer);
         } else {
+            console.log('Timer ended, calling endRound()');
             endRound();
         }
     }
@@ -857,17 +865,22 @@ function startRoundTimer() {
 }
 
 function endRound() {
+    console.log('=== END ROUND', GameState.currentRound, '===');
+
     if (GameState.roundTimer) {
         cancelAnimationFrame(GameState.roundTimer);
     }
 
     const canFly = GameState.currentItem.canFly;
+    console.log('Item:', GameState.currentItem.name, 'canFly:', canFly);
 
     // Calculate scores for each player
     GameState.players.forEach(player => {
         const action = player.action || 'kept'; // No action = kept finger down
         let points = 0;
         let correct = false;
+
+        console.log(`Player ${player.id + 1}: action=${action}`);
 
         if (canFly) {
             // Should have lifted
@@ -887,6 +900,8 @@ function endRound() {
             }
         }
 
+        console.log(`Player ${player.id + 1}: correct=${correct}, points=${points}`);
+
         // Update score (minimum 0)
         player.score = Math.max(0, player.score + points);
 
@@ -898,8 +913,15 @@ function endRound() {
     // Reset round state
     GameState.roundStartTime = null;
 
+    // Reset player actions for next round
+    GameState.players.forEach(player => {
+        player.action = null;
+    });
+
     // Wait before next round
+    console.log('Waiting 2 seconds before next round...');
     setTimeout(() => {
+        console.log('Starting next round...');
         startNextRound();
     }, 2000);
 }
