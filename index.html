@@ -10,6 +10,18 @@
   <meta name="description" content="Classic Indian touch-based reaction game - Keep your finger down or lift it based on whether the object can fly!">
   <meta name="keywords" content="chidiya udd, bird fly, indian game, reaction game, multiplayer, touch game">
   
+  <!-- Content Security Policy for PWA -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com;
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    font-src 'self' https://fonts.gstatic.com;
+    img-src 'self' data: blob:;
+    media-src 'self' blob:;
+    connect-src 'self' https://cdn.jsdelivr.net https://unpkg.com;
+    worker-src 'self' blob:;
+  ">
+  
   <!-- PWA -->
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" href="icon.png">
@@ -245,7 +257,7 @@
       <p id="online-message" class="waiting-message">Creating room...</p>
       <p id="online-error" class="error-message" style="display: none;"></p>
       
-      <div id="lobby-players" class="players-list">
+      <div id="host-lobby-players" class="players-list">
         <!-- Players will be listed here -->
       </div>
       
@@ -353,7 +365,7 @@
     <div class="screen-content">
       <h2 class="title">Waiting Room</h2>
       
-      <div id="lobby-players" class="players-list">
+      <div id="client-lobby-players" class="players-list">
         <!-- Players will be listed here -->
       </div>
       

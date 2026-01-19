@@ -373,10 +373,10 @@ function hostStartGame() {
     // Switch to game screen for host
     setupOnlineGame();
 
-    // Start countdown
+    // Start countdown, then delay slightly before first round to allow touch states to sync
     setTimeout(() => {
         hostStartRound();
-    }, 4000); // After countdown
+    }, 4500); // Increased from 4000ms to allow touch state sync after countdown
 }
 
 function setupOnlineGame() {
@@ -451,11 +451,28 @@ function showOnlineCountdown() {
 
             setTimeout(() => {
                 overlay.classList.remove('active');
+
+                // Sync initial touch states before first round
+                syncInitialTouchStates();
             }, 500);
         }
     }
 
     showNumber();
+}
+
+// Sync current touch state to host before first round starts
+function syncInitialTouchStates() {
+    if (ChidiyaUdd.GameState.mode === 'online') {
+        // Find local player
+        const localPlayer = ChidiyaUdd.GameState.players.find(p => p.isLocal);
+        if (localPlayer && typeof sendTouchStatus === 'function') {
+            // Send current touch state immediately
+            const isTouched = localPlayer.isTouched || false;
+            console.log('[syncInitialTouchStates] Sending initial touch state:', isTouched);
+            sendTouchStatus(isTouched);
+        }
+    }
 }
 
 function hostStartRound() {
@@ -480,18 +497,13 @@ function hostStartRound() {
     MultiplayerState.gameState.responses = {};
 
     // Track who was touching at round start
-    // For host's local player - check if they're currently touching
+    // Check playerTouchStates for all players (both host and clients send touch status)
     MultiplayerState.gameState.wasTouchingAtStart = {};
     for (let playerId in MultiplayerState.gameState.players) {
-        // For local player (host), check local touch state
-        if (playerId === MultiplayerState.myPlayerId) {
-            const localPlayer = ChidiyaUdd.GameState.players.find(p => p.isLocal);
-            MultiplayerState.gameState.wasTouchingAtStart[playerId] = localPlayer?.isTouched || false;
-        } else {
-            // For remote players, use their last known touch state (from touchStatus messages)
-            const playerState = MultiplayerState.gameState.playerTouchStates?.[playerId];
-            MultiplayerState.gameState.wasTouchingAtStart[playerId] = playerState?.isTouched || false;
-        }
+        // Use playerTouchStates for all players (host also updates this for themselves)
+        const playerState = MultiplayerState.gameState.playerTouchStates?.[playerId];
+        MultiplayerState.gameState.wasTouchingAtStart[playerId] = playerState?.isTouched || false;
+        console.log('[Host] Player', playerId, 'wasTouchingAtStart:', playerState?.isTouched || false);
     }
 
     // Broadcast round start
@@ -636,13 +648,29 @@ function hostEndRound() {
 }
 
 function showRoundResults(results) {
+    console.log('[showRoundResults] Results received:', results);
+    console.log('[showRoundResults] Local players:', ChidiyaUdd.GameState.players);
+    console.log('[showRoundResults] My player ID:', MultiplayerState.myPlayerId);
+
     // Update local player circles with results
     ChidiyaUdd.GameState.players.forEach((player, index) => {
-        const onlineId = player.onlineId || MultiplayerState.myPlayerId;
+        // Use the player's onlineId to look up their result
+        // Every player should have an onlineId set during setupOnlineGame
+        const onlineId = player.onlineId;
+
+        if (!onlineId) {
+            console.error('[showRoundResults] Player missing onlineId:', player);
+            return;
+        }
+
+        console.log('[showRoundResults] Processing player:', player, 'onlineId:', onlineId, 'isLocal:', player.isLocal);
+
         const result = results[onlineId];
+        console.log('[showRoundResults] Result for onlineId', onlineId, ':', result);
 
         if (result) {
             player.score = result.newScore;
+            console.log('[showRoundResults] Updated player score to:', player.score);
 
             // Skip feedback for inactive players (correct === null means they weren't touching)
             if (result.correct === null) {
@@ -672,6 +700,8 @@ function showRoundResults(results) {
                     }, 2000);
                 }
             }
+        } else {
+            console.warn('[showRoundResults] No result found for player onlineId:', onlineId);
         }
     });
 }
@@ -901,7 +931,26 @@ function handleHostMessage(data) {
 
     switch (data.type) {
         case 'playerList':
+            // Store player data in client's game state
+            if (!MultiplayerState.gameState) {
+                MultiplayerState.gameState = {
+                    players: {},
+                    currentRound: 0,
+                    usedItems: [],
+                    responses: {},
+                    currentItem: null,
+                    roundStartTime: null,
+                    wasTouchingAtStart: {},
+                    playerTouchStates: {}
+                };
+            }
+            MultiplayerState.gameState.players = data.players;
+            MultiplayerState.hostPeerId = data.hostId || MultiplayerState.hostPeerId;
+
+            // Update the lobby display
             updateLobbyPlayers(data.players);
+
+            console.log('[Client] Received player list:', Object.keys(data.players).length, 'players');
             break;
 
         case 'roomFull':
@@ -940,7 +989,17 @@ function handleHostMessage(data) {
 }
 
 function clientStartGame(players) {
-    MultiplayerState.gameState = { players };
+    // Initialize complete gameState for client (matching host structure)
+    MultiplayerState.gameState = {
+        players: players,
+        currentRound: 0,
+        usedItems: [],
+        responses: {},
+        currentItem: null,
+        roundStartTime: null,
+        wasTouchingAtStart: {},
+        playerTouchStates: {}
+    };
     setupOnlineGame();
 }
 
@@ -1178,6 +1237,9 @@ function sendTouchStatus(isTouched) {
     }
 }
 
+// Make sendTouchStatus globally accessible
+window.sendTouchStatus = sendTouchStatus;
+
 // ==========================================
 // GAME RESTART / LEAVE
 // ==========================================
@@ -1291,30 +1353,42 @@ function displayRoomCode(code) {
 }
 
 function updateLobbyPlayers(players) {
-    const playersList = document.getElementById('lobby-players');
-    if (!playersList) return;
+    // Get both player list elements (host screen and client screen)
+    const hostPlayersList = document.getElementById('host-lobby-players');
+    const clientPlayersList = document.getElementById('client-lobby-players');
 
     const playersData = players || MultiplayerState.gameState?.players || {};
 
-    playersList.innerHTML = '';
+    console.log('[updateLobbyPlayers] Updating lobby with', Object.keys(playersData).length, 'players');
 
-    Object.values(playersData).forEach(player => {
-        const item = document.createElement('div');
-        item.className = 'player-item';
+    // Function to populate a player list element
+    const populatePlayerList = (playersList) => {
+        if (!playersList) return;
 
-        const isMe = player.id === MultiplayerState.myPlayerId;
-        const statusClass = player.isHost ? 'host' : '';
+        playersList.innerHTML = '';
 
-        item.innerHTML = `
-      <div class="player-color" style="background: ${player.color.hex}"></div>
-      <span class="player-name">${player.name}${isMe ? ' (You)' : ''}</span>
-      <span class="status ${statusClass}">${player.isHost ? 'Host' : 'Ready'}</span>
-    `;
+        Object.values(playersData).forEach(player => {
+            const item = document.createElement('div');
+            item.className = 'player-item';
 
-        playersList.appendChild(item);
-    });
+            const isMe = player.id === MultiplayerState.myPlayerId;
+            const statusClass = player.isHost ? 'host' : '';
 
-    // Update start button state
+            item.innerHTML = `
+          <div class="player-color" style="background: ${player.color.hex}"></div>
+          <span class="player-name">${player.name}${isMe ? ' (You)' : ''}</span>
+          <span class="status ${statusClass}">${player.isHost ? 'Host' : 'Ready'}</span>
+        `;
+
+            playersList.appendChild(item);
+        });
+    };
+
+    // Update both player lists
+    populatePlayerList(hostPlayersList);
+    populatePlayerList(clientPlayersList);
+
+    // Update start button state (only on host screen)
     const startBtn = document.getElementById('btn-start-game');
     if (startBtn && MultiplayerState.isHost) {
         const canStart = Object.keys(playersData).length >= 2;

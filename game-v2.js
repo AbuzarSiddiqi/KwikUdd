@@ -300,6 +300,12 @@ function showScreen(screenId) {
             document.body.classList.add('game-active');
         } else {
             document.body.classList.remove('game-active');
+
+            // Hide online leaderboard when leaving game screen
+            const onlineLeaderboard = document.getElementById('online-leaderboard');
+            if (onlineLeaderboard) {
+                onlineLeaderboard.style.display = 'none';
+            }
         }
     }
 }
@@ -369,12 +375,42 @@ function initPlayerSelection() {
     // Back button from game screen
     document.getElementById('btn-back-game')?.addEventListener('click', () => {
         playSound('click');
+
+        // Fully reset game state
         GameState.waitingForFingers = false;
+        GameState.allFingersPlaced = false;
+        GameState.currentRound = 0;
+        GameState.roundStartTime = null;
+        GameState.currentItem = null;
+        GameState.usedItems = [];
+        GameState.isPaused = false;
+
+        // Cancel any running timers
         if (GameState.roundTimer) {
             cancelAnimationFrame(GameState.roundTimer);
+            GameState.roundTimer = null;
         }
-        GameState.isPaused = false;
-        showScreen('player-select-screen');
+
+        // Reset players array completely
+        GameState.players = [];
+        GameState.playerCount = 0;
+
+        // Navigate based on game mode
+        if (GameState.mode === 'online') {
+            // For online mode, go back to lobby
+            showScreen('lobby-screen');
+            // Clean up online leaderboard
+            const leaderboard = document.getElementById('online-leaderboard');
+            if (leaderboard) {
+                leaderboard.remove();
+            }
+        } else {
+            // For offline mode, go to player selection
+            showScreen('player-select-screen');
+        }
+
+        // Reset game mode
+        GameState.mode = null;
     });
 
     // Pause button
@@ -393,11 +429,37 @@ function initPlayerSelection() {
     document.getElementById('btn-quit-game')?.addEventListener('click', () => {
         playSound('click');
         closePauseModal();
+
+        // Fully reset game state
         GameState.waitingForFingers = false;
+        GameState.allFingersPlaced = false;
+        GameState.currentRound = 0;
+        GameState.roundStartTime = null;
+        GameState.currentItem = null;
+        GameState.usedItems = [];
         GameState.isPaused = false;
+
+        // Cancel any running timers
         if (GameState.roundTimer) {
             cancelAnimationFrame(GameState.roundTimer);
+            GameState.roundTimer = null;
         }
+
+        // Reset players array completely
+        GameState.players = [];
+        GameState.playerCount = 0;
+
+        // Clean up online leaderboard if in online mode
+        if (GameState.mode === 'online') {
+            const leaderboard = document.getElementById('online-leaderboard');
+            if (leaderboard) {
+                leaderboard.remove();
+            }
+        }
+
+        // Reset game mode
+        GameState.mode = null;
+
         showScreen('home-screen');
     });
 }
@@ -669,6 +731,11 @@ function handleTouchStart(e, playerId) {
     updateCircleVisual(playerId, true);
     vibrate(30);
 
+    // ONLINE INPUT SYNC - notify host of touch status
+    if (GameState.mode === 'online' && typeof sendTouchStatus === 'function') {
+        sendTouchStatus(true);
+    }
+
     // Check if all fingers are placed
     checkAllFingersPlaced();
 }
@@ -697,8 +764,13 @@ function handleTouchEnd(e, playerId) {
     updateCircleVisual(playerId, false);
 
     // ONLINE INPUT SYNC
-    if (GameState.mode === 'online' && typeof sendPlayerAction === 'function') {
-        sendPlayerAction('lifted');
+    if (GameState.mode === 'online') {
+        if (typeof sendTouchStatus === 'function') {
+            sendTouchStatus(false);
+        }
+        if (typeof sendPlayerAction === 'function') {
+            sendPlayerAction('lifted');
+        }
     }
 }
 
@@ -709,6 +781,11 @@ function handleMouseDown(e, playerId) {
     player.isTouched = true;
     updateCircleVisual(playerId, true);
     vibrate(30);
+
+    // ONLINE INPUT SYNC - notify host of touch status
+    if (GameState.mode === 'online' && typeof sendTouchStatus === 'function') {
+        sendTouchStatus(true);
+    }
 
     // Check if all fingers are placed
     checkAllFingersPlaced();
@@ -731,8 +808,13 @@ function handleMouseUp(e, playerId) {
         updateCircleVisual(playerId, false);
 
         // ONLINE INPUT SYNC
-        if (GameState.mode === 'online' && typeof sendPlayerAction === 'function') {
-            sendPlayerAction('lifted');
+        if (GameState.mode === 'online') {
+            if (typeof sendTouchStatus === 'function') {
+                sendTouchStatus(false);
+            }
+            if (typeof sendPlayerAction === 'function') {
+                sendPlayerAction('lifted');
+            }
         }
     }
 }
@@ -1188,6 +1270,20 @@ function endGame() {
     document.getElementById('btn-main-menu')?.addEventListener('click', () => {
         playSound('click');
         vibrate(50);
+
+        // Fully reset game state
+        GameState.currentRound = 0;
+        GameState.roundStartTime = null;
+        GameState.currentItem = null;
+        GameState.usedItems = [];
+        GameState.waitingForFingers = false;
+        GameState.allFingersPlaced = false;
+        GameState.isPaused = false;
+
+        // Reset players array completely
+        GameState.players = [];
+        GameState.playerCount = 0;
+
         showScreen('home-screen');
     });
 }
