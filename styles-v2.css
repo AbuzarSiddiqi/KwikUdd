@@ -553,7 +553,8 @@ h4 {
 }
 
 .player-circle {
-  position: absolute;
+  position: relative;
+  /* Changed from absolute - wrapper handles positioning */
   width: var(--circle-size);
   height: var(--circle-size);
   border-radius: var(--radius-full);
@@ -601,6 +602,41 @@ h4 {
   font-size: 1.25rem;
   font-weight: 700;
   color: var(--gray-800);
+}
+
+/* Player circle wrapper for positioning */
+.player-circle-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+/* Score badge outside circle - positioned absolutely below the circle */
+.player-score-badge {
+  position: absolute;
+  bottom: -35px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: white;
+  padding: 4px 14px;
+  border-radius: 14px;
+  min-width: 36px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease;
+  z-index: 20;
+  pointer-events: none;
+}
+
+/* Score badge above circle (for circles at bottom of screen) */
+.player-score-badge.score-above {
+  bottom: auto;
+  top: -35px;
 }
 
 /* Circle Formations */
@@ -1540,10 +1576,24 @@ h4 {
   background-color: #000;
   display: flex;
   flex-direction: column;
+  /* Make truly fullscreen - override any parent padding */
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  z-index: 9999;
 }
 
 .finger-shoot-container {
-  position: relative;
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   overflow: hidden;

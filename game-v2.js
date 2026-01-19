@@ -540,25 +540,43 @@ function createCirclesInContainer(container) {
         }
 
         if (shouldRender) {
+            // Create wrapper to hold circle and external score
+            const wrapper = document.createElement('div');
+            wrapper.className = 'player-circle-wrapper';
+            wrapper.style.position = 'absolute';
+            const pos = GameState.mode === 'online' ? positions[0] : positions[index];
+            wrapper.style.left = pos.x;
+            wrapper.style.top = pos.y;
+            wrapper.style.transform = 'translate(-50%, -50%)';
+
             const circle = document.createElement('div');
             circle.className = 'player-circle waiting';
             circle.id = `player-circle-${player.id}`;
             circle.style.color = player.color.hex;
             circle.style.borderColor = player.color.hex;
-            // For online mode, use the single position (index 0 of positions)
-            const pos = GameState.mode === 'online' ? positions[0] : positions[index];
 
-            circle.style.left = pos.x;
-            circle.style.top = pos.y;
-            circle.style.transform = 'translate(-50%, -50%)';
-
+            // Only player label inside circle (no score)
             circle.innerHTML = `
                 <span class="player-label">${player.name || 'P' + (player.id + 1)}</span>
-                <span class="player-score" id="score-${player.id}">${player.score}</span>
             `;
 
-            // ... attach events ...
-            // Touch events
+            // Score badge - positioned above or below based on circle position
+            const scoreBadge = document.createElement('div');
+            scoreBadge.className = 'player-score-badge';
+            scoreBadge.id = `score-${player.id}`;
+            scoreBadge.style.backgroundColor = player.color.hex;
+            scoreBadge.textContent = player.score;
+
+            // If circle is in bottom half of screen, put score ABOVE
+            const posYValue = parseInt(pos.y);
+            if (posYValue > 50) {
+                scoreBadge.classList.add('score-above');
+            }
+
+            circle.appendChild(scoreBadge);
+            wrapper.appendChild(circle);
+
+            // Touch events on the circle
             circle.addEventListener('touchstart', (e) => handleTouchStart(e, player.id), { passive: false });
             circle.addEventListener('touchend', (e) => handleTouchEnd(e, player.id), { passive: false });
             circle.addEventListener('touchcancel', (e) => handleTouchEnd(e, player.id), { passive: false });
@@ -568,7 +586,7 @@ function createCirclesInContainer(container) {
             circle.addEventListener('mouseup', (e) => handleMouseUp(e, player.id));
             circle.addEventListener('mouseleave', (e) => handleMouseUp(e, player.id));
 
-            container.appendChild(circle);
+            container.appendChild(wrapper);
         }
     });
 
@@ -1061,6 +1079,9 @@ function showPlayerFeedback(playerId, correct, points) {
     const circle = container?.querySelector(`#player-circle-${playerId}`);
     if (!circle) return;
 
+    // Get the wrapper for positioning
+    const wrapper = circle.parentElement;
+
     // Add animation class
     circle.classList.remove('bounce', 'shake');
     void circle.offsetWidth; // Force reflow
@@ -1082,8 +1103,11 @@ function showPlayerFeedback(playerId, correct, points) {
         ? `<span>✓</span><span>+${points}</span>`
         : `<span>✗</span><span>${points}</span>`;
 
-    indicator.style.left = circle.style.left;
-    indicator.style.top = circle.style.top;
+    // Position from wrapper
+    if (wrapper) {
+        indicator.style.left = wrapper.style.left;
+        indicator.style.top = wrapper.style.top;
+    }
 
     if (container) {
         container.appendChild(indicator);
@@ -1104,10 +1128,10 @@ function updateScoreDisplay(playerId) {
     if (scoreEl && player) {
         scoreEl.textContent = player.score;
 
-        // Animate score change
-        scoreEl.style.transform = 'scale(1.3)';
+        // Animate score change (preserve translateX from CSS)
+        scoreEl.style.transform = 'translateX(-50%) scale(1.3)';
         setTimeout(() => {
-            scoreEl.style.transform = 'scale(1)';
+            scoreEl.style.transform = 'translateX(-50%) scale(1)';
         }, 200);
     }
 }
