@@ -250,6 +250,17 @@ function handlePlayerMessage(data, playerId) {
                 broadcastLeaderboard();
             }
             break;
+
+        case 'touchStatus':
+            // Track if player is currently touching their circle
+            if (!MultiplayerState.gameState.playerTouchStates) {
+                MultiplayerState.gameState.playerTouchStates = {};
+            }
+            MultiplayerState.gameState.playerTouchStates[playerId] = {
+                isTouched: data.isTouched,
+                timestamp: data.timestamp
+            };
+            break;
     }
 }
 
@@ -468,6 +479,21 @@ function hostStartRound() {
     MultiplayerState.gameState.roundStartTime = Date.now();
     MultiplayerState.gameState.responses = {};
 
+    // Track who was touching at round start
+    // For host's local player - check if they're currently touching
+    MultiplayerState.gameState.wasTouchingAtStart = {};
+    for (let playerId in MultiplayerState.gameState.players) {
+        // For local player (host), check local touch state
+        if (playerId === MultiplayerState.myPlayerId) {
+            const localPlayer = ChidiyaUdd.GameState.players.find(p => p.isLocal);
+            MultiplayerState.gameState.wasTouchingAtStart[playerId] = localPlayer?.isTouched || false;
+        } else {
+            // For remote players, use their last known touch state (from touchStatus messages)
+            const playerState = MultiplayerState.gameState.playerTouchStates?.[playerId];
+            MultiplayerState.gameState.wasTouchingAtStart[playerId] = playerState?.isTouched || false;
+        }
+    }
+
     // Broadcast round start
     broadcastToAll({
         type: 'roundStart',
@@ -550,9 +576,22 @@ function hostEndRound() {
 
     for (let playerId in MultiplayerState.gameState.players) {
         const response = MultiplayerState.gameState.responses[playerId] || { action: 'kept' };
-        console.log('[Host] Player:', playerId, 'response:', response);
+        const wasTouchingAtStart = MultiplayerState.gameState.wasTouchingAtStart?.[playerId] ?? false;
+        console.log('[Host] Player:', playerId, 'response:', response, 'wasTouchingAtStart:', wasTouchingAtStart);
         let points = 0;
         let correct = false;
+
+        // If player wasn't touching at the start, skip them (no points, no feedback)
+        if (!wasTouchingAtStart) {
+            console.log('[Host] Player:', playerId, 'skipped (not touching at start)');
+            results[playerId] = {
+                action: 'inactive',
+                points: 0,
+                correct: null, // null indicates inactive
+                newScore: MultiplayerState.gameState.players[playerId].score
+            };
+            continue; // Skip to next player
+        }
 
         if (canFly && response.action === 'lifted') {
             points = 10;
@@ -604,6 +643,12 @@ function showRoundResults(results) {
 
         if (result) {
             player.score = result.newScore;
+
+            // Skip feedback for inactive players (correct === null means they weren't touching)
+            if (result.correct === null) {
+                ChidiyaUdd.updateScoreDisplay(player.id);
+                return;
+            }
 
             if (player.isLocal) {
                 // Show standard feedback for local player
@@ -1090,15 +1135,47 @@ function setupOnlineTouchHandlers() {
         const isMyCircle = player.onlineId === MultiplayerState.myPlayerId;
 
         if (isMyCircle || MultiplayerState.isHost) {
+            // Track touch start
+            circle.addEventListener('touchstart', () => {
+                sendTouchStatus(true);
+            }, { passive: true });
+
+            circle.addEventListener('mousedown', () => {
+                sendTouchStatus(true);
+            });
+
+            // Track touch end
             circle.addEventListener('touchend', () => {
+                sendTouchStatus(false);
                 sendPlayerAction('lifted');
             }, { passive: false });
 
             circle.addEventListener('mouseup', () => {
+                sendTouchStatus(false);
                 sendPlayerAction('lifted');
             });
         }
     });
+}
+
+// Send touch status to host
+function sendTouchStatus(isTouched) {
+    if (MultiplayerState.isHost) {
+        // Host tracks their own touch state
+        if (!MultiplayerState.gameState.playerTouchStates) {
+            MultiplayerState.gameState.playerTouchStates = {};
+        }
+        MultiplayerState.gameState.playerTouchStates[MultiplayerState.myPlayerId] = {
+            isTouched: isTouched,
+            timestamp: Date.now()
+        };
+    } else if (MultiplayerState.hostConnection && MultiplayerState.hostConnection.open) {
+        MultiplayerState.hostConnection.send({
+            type: 'touchStatus',
+            isTouched: isTouched,
+            timestamp: Date.now()
+        });
+    }
 }
 
 // ==========================================

@@ -55,9 +55,9 @@ const ITEMS = [
 
     // ===== TRICK ITEMS (birds that can't fly) =====
     { name: "PENGUIN", canFly: false, emoji: "🐧" },
-    { name: "OSTRICH", canFly: false, emoji: "🦤" },
-    { name: "EMU", canFly: false, emoji: "🦤" },
-    { name: "KIWI BIRD", canFly: false, emoji: "🥝" },
+    { name: "OSTRICH", canFly: false, emoji: "🪶" },  // Flightless bird
+    { name: "EMU", canFly: false, emoji: "🪶" },       // Flightless bird
+    { name: "KIWI BIRD", canFly: false, emoji: "🐦" }, // NZ flightless bird (not the fruit!)
 
     // ===== NON-FLYING THINGS (32 items) =====
 
@@ -149,6 +149,10 @@ const GameState = {
     // Waiting for all fingers
     allFingersPlaced: false,
     waitingForFingers: false,
+
+    // Pause state
+    isPaused: false,
+    pauseStartTime: null,
 
     // Used items (to avoid repeats)
     usedItems: [],
@@ -338,8 +342,15 @@ function initPlayerSelection() {
     const playerGrid = document.getElementById('player-grid');
     if (!playerGrid) return;
 
-    // Create player count buttons
-    for (let i = 1; i <= 6; i++) {
+    // Detect max simultaneous touches supported by device
+    // Most phones support 5-10, but we'll cap at 6 for usability
+    const maxTouchPoints = navigator.maxTouchPoints || 5;
+    const maxPlayers = Math.min(6, Math.max(2, maxTouchPoints));
+
+    console.log('Max touch points:', maxTouchPoints, 'Max players:', maxPlayers);
+
+    // Create player count buttons based on device capability
+    for (let i = 1; i <= maxPlayers; i++) {
         const btn = document.createElement('button');
         btn.className = 'player-count-btn';
         btn.innerHTML = `
@@ -362,7 +373,32 @@ function initPlayerSelection() {
         if (GameState.roundTimer) {
             cancelAnimationFrame(GameState.roundTimer);
         }
+        GameState.isPaused = false;
         showScreen('player-select-screen');
+    });
+
+    // Pause button
+    document.getElementById('btn-pause')?.addEventListener('click', () => {
+        playSound('click');
+        pauseGame();
+    });
+
+    // Resume button
+    document.getElementById('btn-resume')?.addEventListener('click', () => {
+        playSound('click');
+        resumeGame();
+    });
+
+    // Quit from pause modal
+    document.getElementById('btn-quit-game')?.addEventListener('click', () => {
+        playSound('click');
+        closePauseModal();
+        GameState.waitingForFingers = false;
+        GameState.isPaused = false;
+        if (GameState.roundTimer) {
+            cancelAnimationFrame(GameState.roundTimer);
+        }
+        showScreen('home-screen');
     });
 }
 
@@ -438,7 +474,7 @@ function startGameSetup() {
 
     // Update round indicator
     if (elements.roundIndicator) {
-        elements.roundIndicator.textContent = 'Waiting for players...';
+        elements.roundIndicator.textContent = 'Ready?';
     }
 
     // ONLINE MODE: Hide old opponents container (leaderboard is shown at top by peer-multiplayer.js)
@@ -818,7 +854,7 @@ function startNextRound() {
         // Update round indicator
         console.log('Updating round indicator...');
         if (elements.roundIndicator) {
-            elements.roundIndicator.textContent = `Round ${GameState.currentRound}/${GameState.totalRounds}`;
+            elements.roundIndicator.textContent = `${GameState.currentRound}/${GameState.totalRounds}`;
         }
 
         // Select random item
@@ -845,9 +881,10 @@ function startNextRound() {
         GameState.currentItem = randomItem;
         GameState.usedItems.push(randomItem);
 
-        // Reset player actions
+        // Reset player actions and record who is touching at start
         GameState.players.forEach(player => {
             player.action = null;
+            player.wasTouchingAtStart = player.isTouched; // Track if finger was on circle at round start
         });
 
         // Display the item
@@ -961,10 +998,18 @@ function endRound() {
     // Calculate scores for each player
     GameState.players.forEach(player => {
         const action = player.action || 'kept'; // No action = kept finger down
+        const wasTouchingAtStart = player.wasTouchingAtStart; // Was finger on circle when round started?
         let points = 0;
         let correct = false;
 
-        console.log(`Player ${player.id + 1}: action=${action}`);
+        console.log(`Player ${player.id + 1}: action=${action}, wasTouchingAtStart=${wasTouchingAtStart}`);
+
+        // If player wasn't touching at the start, skip them (no points, no feedback)
+        if (!wasTouchingAtStart) {
+            // Player wasn't touching - no score change, no visual feedback
+            console.log(`Player ${player.id + 1}: skipped (not touching at start)`);
+            return; // Skip this player entirely
+        }
 
         if (canFly) {
             // Should have lifted
@@ -1269,14 +1314,49 @@ function saveStats(winner) {
 // ==========================================
 
 function pauseGame() {
+    if (GameState.isPaused) return;
+
+    GameState.isPaused = true;
+    GameState.pauseStartTime = Date.now();
+
     if (GameState.roundTimer) {
         cancelAnimationFrame(GameState.roundTimer);
     }
+
     // Show pause modal
+    const modal = document.getElementById('pause-modal');
+    if (modal) {
+        modal.classList.add('active');
+    }
 }
 
 function resumeGame() {
-    // Resume timer from where it left off
+    if (!GameState.isPaused) return;
+
+    // Calculate how long we were paused
+    const pauseDuration = Date.now() - GameState.pauseStartTime;
+
+    // Adjust the round start time to account for pause
+    if (GameState.roundStartTime) {
+        GameState.roundStartTime += pauseDuration;
+    }
+
+    GameState.isPaused = false;
+
+    // Close pause modal
+    closePauseModal();
+
+    // Resume timer if we were in a round
+    if (GameState.roundStartTime && GameState.currentRound > 0) {
+        startRoundTimer();
+    }
+}
+
+function closePauseModal() {
+    const modal = document.getElementById('pause-modal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
 }
 
 // ==========================================
