@@ -14,6 +14,8 @@
   --primary-light: #6BA8F2;
   --secondary: #FFD93D;
   --secondary-dark: #E6C235;
+  --accent: #FF6B6B;
+  --accent-light: #FF8E8E;
 
   /* Player Colors */
   --player-1: #FF5252;
@@ -44,9 +46,17 @@
   --gray-800: #424242;
   --gray-900: #212121;
 
-  /* Background */
+  /* Premium Backgrounds */
   --bg-gradient: linear-gradient(135deg, #87CEEB 0%, #E0F4FF 50%, #FFFFFF 100%);
+  --bg-gradient-soft: linear-gradient(180deg, #a8edea 0%, #fed6e3 50%, #d299c2 100%);
+  --bg-sky: linear-gradient(180deg, #87CEEB 0%, #B6E3FF 50%, #E8F4FD 100%);
   --bg-overlay: rgba(255, 255, 255, 0.95);
+
+  /* Glassmorphism */
+  --glass-bg: rgba(255, 255, 255, 0.25);
+  --glass-bg-strong: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.3);
+  --glass-blur: blur(20px);
 
   /* Typography */
   --font-display: 'Fredoka', 'Quicksand', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -73,16 +83,21 @@
   --radius-xl: 24px;
   --radius-full: 50%;
 
-  /* Shadows */
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.15);
-  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.2);
-  --shadow-glow: 0 0 20px rgba(74, 144, 226, 0.5);
+  /* Premium Shadows */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.16);
+  --shadow-xl: 0 12px 40px rgba(0, 0, 0, 0.2);
+  --shadow-glow: 0 0 30px rgba(74, 144, 226, 0.4);
+  --shadow-glow-success: 0 0 25px rgba(76, 175, 80, 0.5);
+  --shadow-glow-error: 0 0 25px rgba(244, 67, 54, 0.5);
+  --shadow-float: 0 20px 40px rgba(0, 0, 0, 0.15);
 
   /* Transitions */
-  --transition-fast: 150ms ease-out;
-  --transition-normal: 300ms ease-out;
-  --transition-slow: 500ms ease-out;
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* ==========================================
@@ -282,6 +297,22 @@ h4 {
 
 .btn-secondary:active {
   box-shadow: var(--shadow-sm), 0 2px 0 var(--secondary-dark);
+  transform: translateY(2px);
+}
+
+.btn-accent {
+  background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);
+  color: var(--white);
+  box-shadow: var(--shadow-md), 0 4px 0 #E65100;
+}
+
+.btn-accent:hover {
+  box-shadow: var(--shadow-lg), 0 6px 0 #E65100, 0 0 20px rgba(255, 152, 0, 0.4);
+  transform: translateY(-2px);
+}
+
+.btn-accent:active {
+  box-shadow: var(--shadow-sm), 0 2px 0 #E65100;
   transform: translateY(2px);
 }
 
@@ -1807,4 +1838,390 @@ h4 {
   flex-direction: column;
   gap: 12px;
   margin-top: 16px;
+}
+
+/* ==========================================
+   PREMIUM UI ENHANCEMENTS
+   ========================================== */
+
+/* Floating Particles Animation */
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-20px) rotate(5deg);
+  }
+}
+
+@keyframes floatReverse {
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(20px) rotate(-5deg);
+  }
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+@keyframes pulseGlow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(74, 144, 226, 0.4);
+  }
+
+  50% {
+    box-shadow: 0 0 20px 10px rgba(74, 144, 226, 0.2);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes bounce {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Enhanced Button Hover Effects */
+.btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.3),
+      transparent);
+  transition: left 0.5s ease;
+}
+
+.btn:hover::before {
+  left: 100%;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  box-shadow: var(--shadow-lg), 0 4px 0 var(--primary-dark);
+}
+
+.btn-primary:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-xl), 0 6px 0 var(--primary-dark), var(--shadow-glow);
+}
+
+/* Glassmorphism Modal Enhancement */
+.modal {
+  background: var(--glass-bg-strong);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-xl);
+  animation: scaleIn 0.3s ease-out;
+}
+
+/* Player Circle Enhancements */
+.player-circle.waiting {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+.player-circle.touched {
+  transform: scale(1.1);
+  box-shadow: var(--shadow-lg), 0 0 40px currentColor;
+  transition: all var(--transition-bounce);
+}
+
+.player-circle.not-touched {
+  transform: scale(0.92);
+  opacity: 0.6;
+  filter: grayscale(0.3);
+}
+
+/* Enhanced Timer Ring */
+.timer-ring {
+  filter: drop-shadow(0 0 10px rgba(74, 144, 226, 0.3));
+}
+
+.timer-ring.warning .timer-progress {
+  stroke: var(--secondary);
+  filter: drop-shadow(0 0 8px var(--secondary));
+}
+
+.timer-ring.danger .timer-progress {
+  stroke: var(--error);
+  filter: drop-shadow(0 0 12px var(--error));
+  animation: pulse 0.5s ease-in-out infinite;
+}
+
+/* Object Display Enhancement */
+.object-emoji {
+  font-size: 4rem;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+  animation: bounce 1s ease-in-out infinite;
+}
+
+.object-display {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+/* Score Popup Animation */
+.result-indicator {
+  animation: slideUp 0.3s ease-out forwards;
+}
+
+.result-indicator.correct {
+  color: var(--success);
+  text-shadow: 0 0 10px var(--success-light);
+}
+
+.result-indicator.wrong {
+  color: var(--error);
+  text-shadow: 0 0 10px var(--error-light);
+}
+
+/* Enhanced Score Badge */
+.player-score-badge {
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+  font-weight: 800;
+}
+
+/* Home Screen Title Animation */
+.app-title {
+  animation: float 3s ease-in-out infinite;
+  text-shadow: 0 4px 20px rgba(74, 144, 226, 0.3);
+}
+
+/* Card Hover Effects */
+.player-count-btn {
+  transition: all var(--transition-normal);
+  background: var(--glass-bg-strong);
+  backdrop-filter: var(--glass-blur);
+  border: 2px solid transparent;
+}
+
+.player-count-btn:hover {
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: var(--shadow-float);
+  border-color: var(--primary-light);
+}
+
+.player-count-btn:active {
+  transform: translateY(-2px) scale(0.98);
+}
+
+/* Floating Controls Enhancement */
+.btn-floating {
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  transition: all var(--transition-normal);
+}
+
+.btn-floating:hover {
+  transform: scale(1.1);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Screen Transitions */
+.screen {
+  animation: slideUp 0.4s ease-out;
+}
+
+/* Confetti Enhancement */
+.confetti {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+/* Leaderboard Item Animation */
+.leaderboard-item {
+  animation: slideUp 0.3s ease-out backwards;
+  transition: all var(--transition-normal);
+}
+
+.leaderboard-item:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.leaderboard-item:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.leaderboard-item:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.leaderboard-item:nth-child(4) {
+  animation-delay: 0.4s;
+}
+
+.leaderboard-item.winner {
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  color: var(--gray-900);
+  box-shadow: var(--shadow-lg), 0 0 20px rgba(255, 215, 0, 0.4);
+}
+
+/* ==========================================
+   FLOATING DECORATIONS
+   ========================================== */
+
+.floating-decorations {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.floating-bird {
+  position: absolute;
+  font-size: 2rem;
+  opacity: 0.6;
+  animation: floatBird 8s ease-in-out infinite;
+}
+
+.floating-bird.bird-1 {
+  top: 15%;
+  left: 10%;
+  animation-delay: 0s;
+}
+
+.floating-bird.bird-2 {
+  top: 25%;
+  right: 15%;
+  font-size: 2.5rem;
+  animation-delay: -2s;
+  animation-duration: 10s;
+}
+
+.floating-bird.bird-3 {
+  top: 40%;
+  left: 5%;
+  font-size: 1.5rem;
+  animation-delay: -4s;
+  animation-duration: 12s;
+}
+
+.floating-cloud {
+  position: absolute;
+  font-size: 3rem;
+  opacity: 0.4;
+  animation: floatCloud 20s linear infinite;
+}
+
+.floating-cloud.cloud-1 {
+  top: 10%;
+  left: -10%;
+  animation-duration: 25s;
+}
+
+.floating-cloud.cloud-2 {
+  top: 35%;
+  left: -15%;
+  font-size: 4rem;
+  animation-delay: -10s;
+  animation-duration: 30s;
+}
+
+@keyframes floatBird {
+
+  0%,
+  100% {
+    transform: translateY(0) translateX(0) rotate(-5deg);
+  }
+
+  25% {
+    transform: translateY(-15px) translateX(10px) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-5px) translateX(20px) rotate(5deg);
+  }
+
+  75% {
+    transform: translateY(-20px) translateX(10px) rotate(0deg);
+  }
+}
+
+@keyframes floatCloud {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(calc(100vw + 100%));
+  }
+}
+
+/* Enhanced Logo Bird */
+.logo-bird {
+  font-size: 5rem;
+  animation: bounce 2s ease-in-out infinite;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.2));
 }
