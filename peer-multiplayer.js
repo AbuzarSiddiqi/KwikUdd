@@ -1471,7 +1471,56 @@ function displayRoomCode(code) {
             });
         });
     }
+
+    // Share Link button
+    const shareBtn = document.getElementById('btn-share-link');
+    if (shareBtn) {
+        shareBtn.addEventListener('click', async () => {
+            const roomLink = getRoomShareLink(code);
+
+            // Try native share first
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: 'Join my Chidiya Udd game!',
+                        text: `Join my game room: ${code}`,
+                        url: roomLink
+                    });
+                    console.log('[Share] Shared successfully');
+                } catch (err) {
+                    if (err.name !== 'AbortError') {
+                        // Fallback to clipboard
+                        copyShareLink(roomLink, shareBtn);
+                    }
+                }
+            } else {
+                // Fallback to clipboard
+                copyShareLink(roomLink, shareBtn);
+            }
+        });
+    }
 }
+
+// Generate shareable room link
+function getRoomShareLink(code) {
+    const baseUrl = window.location.origin + window.location.pathname;
+    return `${baseUrl}?room=${code}`;
+}
+
+// Copy share link to clipboard
+function copyShareLink(link, btn) {
+    navigator.clipboard.writeText(link).then(() => {
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '✅ Link Copied!';
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+        }, 2000);
+    }).catch(() => {
+        // Fallback for older browsers
+        prompt('Copy this link:', link);
+    });
+}
+
 
 function updateLobbyPlayers(players) {
     // Get both player list elements (host screen and client screen)

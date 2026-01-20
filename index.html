@@ -289,10 +289,16 @@
       <div class="room-code-display">
         <span class="room-code-label">Room Code</span>
         <span id="display-room-code" class="room-code">------</span>
-        <button id="btn-copy-code" class="btn btn-sm btn-outline">
-          📋 Copy
-        </button>
+        <div class="room-code-buttons">
+          <button id="btn-copy-code" class="btn btn-sm btn-outline">
+            📋 Copy
+          </button>
+          <button id="btn-share-link" class="btn btn-sm btn-primary">
+            🔗 Share Link
+          </button>
+        </div>
       </div>
+
       
       <p id="online-message" class="waiting-message">Creating room...</p>
       <p id="online-error" class="error-message" style="display: none;"></p>
@@ -565,10 +571,19 @@
       });
     }
     
-    // Handle URL parameters (for PWA shortcuts)
+    // Handle URL parameters (for PWA shortcuts and deep links)
     const urlParams = new URLSearchParams(window.location.search);
     const mode = urlParams.get('mode');
-    if (mode === 'offline') {
+    const roomCode = urlParams.get('room');
+    
+    if (roomCode) {
+      // Deep link to join a specific room
+      document.addEventListener('DOMContentLoaded', () => {
+        console.log('[DeepLink] Room code detected:', roomCode);
+        // Navigate to online mode and pre-fill/auto-join the room
+        handleRoomDeepLink(roomCode.toUpperCase());
+      });
+    } else if (mode === 'offline') {
       document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('btn-play-offline')?.click();
       });
@@ -577,6 +592,45 @@
         document.getElementById('btn-play-online')?.click();
       });
     }
+    
+    // Handle room deep link
+    function handleRoomDeepLink(code) {
+      // Clear the URL parameter (but keep the page)
+      const url = new URL(window.location.href);
+      url.searchParams.delete('room');
+      window.history.replaceState({}, '', url.pathname);
+      
+      // Store the room code to join
+      window.pendingRoomCode = code;
+      
+      // Navigate to online menu first
+      const onlineBtn = document.getElementById('btn-play-online');
+      if (onlineBtn) {
+        onlineBtn.click();
+        
+        // After a short delay, go to join room screen with code pre-filled
+        setTimeout(() => {
+          const joinBtn = document.getElementById('btn-join-room');
+          if (joinBtn) {
+            joinBtn.click();
+            
+            // Pre-fill the room code
+            setTimeout(() => {
+              const codeInput = document.getElementById('room-code-input');
+              if (codeInput) {
+                codeInput.value = code;
+                // Optionally auto-submit
+                const submitBtn = document.getElementById('btn-join-submit');
+                if (submitBtn) {
+                  submitBtn.click();
+                }
+              }
+            }, 100);
+          }
+        }, 100);
+      }
+    }
+
     
     // Prevent zoom on double-tap
     let lastTouchEnd = 0;

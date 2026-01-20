@@ -991,6 +991,13 @@ h4 {
   color: var(--gray-500);
 }
 
+.room-code-buttons {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-xs);
+}
+
+
 .room-code-input {
   font-family: var(--font-display);
   font-size: 2rem;
