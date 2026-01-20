@@ -1009,6 +1009,14 @@ function cancelJoinRoom() {
     if (window.BirdAnimationController) {
         window.BirdAnimationController.reset();
     }
+
+    // Reset Join Button
+    const joinBtn = document.getElementById('btn-join-submit');
+    if (joinBtn) {
+        joinBtn.textContent = 'Join Room'; // Or 'Join' depending on original
+        joinBtn.classList.remove('btn-disabled');
+        joinBtn.disabled = false;
+    }
 }
 
 function tryConnect(hostIds, index) {
@@ -1827,6 +1835,20 @@ function showMessage(text) {
 
 function showError(text) {
     const errorEl = document.getElementById('online-error');
+
+    // Always reset Join button state
+    const joinBtn = document.getElementById('btn-join-submit');
+    if (joinBtn) {
+        joinBtn.textContent = 'Join Room';
+        joinBtn.classList.remove('btn-disabled');
+        joinBtn.disabled = false;
+    }
+
+    // Also reset loading if active
+    const loadingEl = document.getElementById('join-loading');
+    if (loadingEl) loadingEl.style.display = 'none';
+
+    // Show error
     if (errorEl) {
         errorEl.textContent = text;
         errorEl.style.display = 'block';
@@ -2090,4 +2112,137 @@ window.leaveRoom = leaveRoom;
 window.sendPlayerAction = sendPlayerAction;
 window.cancelJoinRoom = cancelJoinRoom;
 window.MultiplayerState = MultiplayerState;
+
+// ==========================================
+// QR CODE SCANNER (JOIN ROOM)
+// ==========================================
+
+let html5QrcodeScanner = null;
+
+function initQRScanner() {
+    const scanBtn = document.getElementById('btn-scan-qr');
+    const modal = document.getElementById('qr-scanner-modal');
+    const closeBtn = document.getElementById('btn-close-scanner');
+    const readerElement = document.getElementById('qr-reader');
+
+    if (!scanBtn || !modal || !closeBtn || !readerElement) return;
+
+    // Open Scanner
+    scanBtn.addEventListener('click', () => {
+        modal.classList.add('active');
+        startScanner();
+    });
+
+    // Close Scanner
+    closeBtn.addEventListener('click', stopScanner);
+
+    // Close on background click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) stopScanner();
+    });
+
+    function startScanner() {
+        if (html5QrcodeScanner) return; // Already running
+
+        // Verify library is loaded
+        if (typeof Html5Qrcode === 'undefined') {
+            console.error('Html5Qrcode library not loaded');
+            alert('QR Scanner library not loaded. Please try refreshing.');
+            return;
+        }
+
+        const onScanSuccess = (decodedText, decodedResult) => {
+            // Handle the scanned code
+            console.log(`Scan Code: ${decodedText}`);
+
+            // Expected format: Code (6 chars) OR URL ending in ?room=CODE
+            let roomCode = decodedText;
+
+            // Check if it's a URL
+            if (decodedText.includes('?room=')) {
+                try {
+                    const url = new URL(decodedText);
+                    const code = url.searchParams.get('room');
+                    if (code) roomCode = code;
+                } catch (e) {
+                    // Fallback regex
+                    const match = decodedText.match(/[?&]room=([^&]+)/);
+                    if (match) roomCode = match[1];
+                }
+            }
+
+            // Clean code
+            roomCode = roomCode.trim().toUpperCase().slice(0, 6);
+
+            // Validate code format (alphanumeric)
+            if (/^[A-Z0-9]{6}$/.test(roomCode)) {
+                // Success!
+                if (typeof ChidiyaUdd !== 'undefined' && ChidiyaUdd.playSound) {
+                    ChidiyaUdd.playSound('click'); // Reuse click or success sound
+                }
+                stopScanner();
+
+                // Fill input
+                const input = document.getElementById('room-code-input');
+                if (input) {
+                    input.value = roomCode;
+                }
+
+                // Show loading state on Join button
+                const joinBtn = document.getElementById('btn-join-submit');
+                if (joinBtn) {
+                    joinBtn.textContent = 'Joining...';
+                    joinBtn.classList.add('btn-disabled');
+                    joinBtn.disabled = true;
+                }
+
+                // Trigger Join
+                if (typeof joinRoom === 'function') {
+                    joinRoom(roomCode);
+                }
+            } else {
+                // Invalid code, keep scanning
+                console.warn('Invalid QR Code format:', roomCode);
+            }
+        };
+
+        const onScanFailure = (error) => {
+            // handle scan failure, usually better to ignore and keep scanning.
+        };
+
+        // Use Html5Qrcode directly for better control
+        html5QrcodeScanner = new Html5Qrcode("qr-reader");
+
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+        // Prefer back camera
+        html5QrcodeScanner.start({ facingMode: "environment" }, config, onScanSuccess, onScanFailure)
+            .catch(err => {
+                console.error('Error starting scanner', err);
+                alert('Error accessing camera: ' + (err.message || err));
+                stopScanner();
+            });
+    }
+
+    function stopScanner() {
+        if (modal) modal.classList.remove('active');
+
+        if (html5QrcodeScanner) {
+            html5QrcodeScanner.stop().then(() => {
+                html5QrcodeScanner.clear();
+                html5QrcodeScanner = null;
+            }).catch(err => {
+                console.error("Failed to stop scanner", err);
+                html5QrcodeScanner = null;
+            });
+        }
+    }
+}
+
+// Initialize scanner when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initQRScanner);
+} else {
+    initQRScanner();
+}
 

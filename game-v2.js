@@ -1949,6 +1949,14 @@ function initOnlineMode() {
         const input = document.getElementById('room-code-input');
         if (input && input.value.length >= 4) {
             playSound('click');
+
+            // Show loading state
+            const btn = document.getElementById('btn-join-submit');
+            const originalText = btn.textContent;
+            btn.textContent = 'Joining...';
+            btn.classList.add('btn-disabled');
+            btn.disabled = true;
+
             if (typeof joinRoom === 'function') {
                 joinRoom(input.value.toUpperCase());
             }
@@ -1961,19 +1969,30 @@ function initOnlineMode() {
             const text = await navigator.clipboard.readText();
             const input = document.getElementById('room-code-input');
             if (input && text) {
-                // Format code (uppercase, alphanumeric, max 6 chars)
-                const code = text.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
-                input.value = code;
+                // Extract code from URL if needed
+                let code = text;
+                if (text.includes('?room=')) {
+                    const match = text.match(/[?&]room=([^&]+)/);
+                    if (match) code = match[1];
+                }
 
-                if (code.length >= 4) {
-                    playSound('click');
-                    if (typeof joinRoom === 'function') {
-                        joinRoom(code);
-                    }
+                input.value = code.trim().toUpperCase().substring(0, 6);
+                playSound('click');
+
+                // Show loading state
+                const btn = document.getElementById('btn-join-submit');
+                if (btn) {
+                    btn.textContent = 'Joining...';
+                    btn.classList.add('btn-disabled');
+                    btn.disabled = true;
+                }
+
+                if (typeof joinRoom === 'function') {
+                    joinRoom(input.value);
                 }
             }
         } catch (err) {
-            console.error('Failed to read clipboard', err);
+            console.error('Failed to read clipboard:', err);
         }
     });
 

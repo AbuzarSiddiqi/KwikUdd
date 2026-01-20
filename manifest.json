@@ -3,11 +3,17 @@
   "short_name": "Chidiya Udd",
   "description": "Classic Indian touch-based reaction multiplayer game. Keep your finger down or lift it based on whether the object can fly!",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#4A90E2",
   "theme_color": "#4A90E2",
   "orientation": "any",
-  "categories": ["games", "entertainment"],
+  "categories": [
+    "games",
+    "entertainment"
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "icon.png",

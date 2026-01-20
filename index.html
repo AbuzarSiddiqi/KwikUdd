@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#4A90E2">
+  <meta name="theme-color" content="#87CEEB">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Chidiya Udd">
@@ -34,6 +34,9 @@
   
   <!-- Styles -->
   <link rel="stylesheet" href="styles-v2.css">
+  
+  <!-- QR Code Library -->
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   
   <title>Chidiya Udd - Bird Fly Game</title>
 </head>
@@ -347,9 +350,12 @@
           autocapitalize="characters"
           style="width: 100%; max-width: 100%; display: block; margin: 0 auto 8px; box-sizing: border-box;"
         >
-        <div style="display: flex; justify-content: center;">
+        <div style="display: flex; justify-content: center; gap: 10px;">
             <button id="btn-paste-join" class="btn btn-secondary btn-sm" style="padding: 4px 12px; font-size: 0.9rem; display: flex; align-items: center; gap: 6px;" title="Paste & Join">
                 📋 Paste & Join
+            </button>
+            <button id="btn-scan-qr" class="btn btn-accent btn-sm" style="padding: 4px 12px; font-size: 0.9rem; display: flex; align-items: center; gap: 6px;" title="Scan QR Code">
+                📷 Scan QR
             </button>
         </div>
       </div>
@@ -495,7 +501,7 @@
         <div class="settings-item">
           <span class="settings-label">
             <span class="settings-icon">🔄</span>
-            <span>Auto-Restart (8s)</span>
+            <span>Auto-Restart (15s)</span>
           </span>
           <div id="toggle-auto-restart" class="toggle active"></div>
         </div>
@@ -518,6 +524,26 @@
       <div class="modal-header">
         <h3 class="modal-title">❓ How to Play</h3>
         <button class="modal-close">✕</button>
+      </div>
+      <!-- ... existing content ... -->
+    </div>
+  </div>
+
+  <!-- ==========================================
+       QR SCANNER MODAL
+       ========================================== -->
+  <div id="qr-scanner-modal" class="modal-overlay">
+    <div class="modal" style="max-width: 400px; width: 90%;">
+      <div class="modal-header">
+        <h3 class="modal-title">📷 Scan Room QR</h3>
+        <button class="modal-close" id="btn-close-scanner">✕</button>
+      </div>
+      <div class="modal-content" style="text-align: center;">
+        <div id="qr-reader" style="width: 100%; min-height: 250px; background: #000; border-radius: 12px; overflow: hidden;"></div>
+        <p style="margin-top: 15px; font-size: 0.9rem; opacity: 0.8;">Point camera at the Host's screen</p>
+      </div>
+    </div>
+  </div>
       </div>
       
       <div class="tutorial-content">
