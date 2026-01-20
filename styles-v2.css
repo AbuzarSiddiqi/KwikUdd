@@ -2267,30 +2267,31 @@ h4 {
 
 .pwa-install-prompt {
   position: fixed;
-  bottom: 0;
+  top: 0;
   left: 0;
   right: 0;
   padding: var(--spacing-md);
+  padding-top: calc(var(--spacing-md) + env(safe-area-inset-top));
   background: var(--glass-bg-strong);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
-  border-top: 1px solid var(--glass-border);
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid var(--glass-border);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   z-index: 1000;
   transform: translateY(0);
   transition: transform var(--transition-normal), opacity var(--transition-normal);
-  animation: slideUp 0.4s ease-out;
+  animation: slideDown 0.4s ease-out;
 }
 
 .pwa-install-prompt.hidden {
-  transform: translateY(100%);
+  transform: translateY(-100%);
   opacity: 0;
   pointer-events: none;
 }
 
-@keyframes slideUp {
+@keyframes slideDown {
   from {
-    transform: translateY(100%);
+    transform: translateY(-100%);
     opacity: 0;
   }
 
