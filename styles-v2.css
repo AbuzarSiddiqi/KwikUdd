@@ -374,7 +374,8 @@ h4 {
 
 .logo-container {
   position: relative;
-  margin-bottom: var(--spacing-lg);
+  z-index: 5;
+  /* margin-bottom removed to bring text closer */
 }
 
 .logo-bird {
@@ -415,6 +416,7 @@ h4 {
 
 .menu-bottom {
   display: flex;
+  align-items: center;
   gap: var(--spacing-md);
   margin-top: var(--spacing-xl);
 }
