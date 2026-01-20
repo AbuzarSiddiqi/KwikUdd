@@ -506,6 +506,17 @@ function hostStartRound() {
         console.log('[Host] Player', playerId, 'wasTouchingAtStart:', playerState?.isTouched || false);
     }
 
+    // Also update local ChidiyaUdd.GameState.players for local scoring
+    // AND update currentRound/roundStartTime so touch handlers work
+    ChidiyaUdd.GameState.currentRound = MultiplayerState.gameState.currentRound;
+    ChidiyaUdd.GameState.roundStartTime = Date.now();
+    ChidiyaUdd.GameState.currentItem = randomItem;
+    ChidiyaUdd.GameState.players.forEach(player => {
+        player.action = null;
+        player.wasTouchingAtRoundStart = player.isTouched || false;
+    });
+
+
     // Broadcast round start
     broadcastToAll({
         type: 'roundStart',
@@ -523,6 +534,7 @@ function hostStartRound() {
         hostEndRound();
     }, ChidiyaUdd.GameState.roundDuration);
 }
+
 
 function displayRound(item, round) {
     // Update round indicator
@@ -629,15 +641,21 @@ function hostEndRound() {
         };
     }
 
-    // Broadcast results
+    // Broadcast results to clients
     broadcastToAll({
         type: 'roundEnd',
         results: results,
         correctAnswer: canFly ? 'lift' : 'keep'
     });
 
-    // Show results locally
+    // Host also uses local scoring for their own feedback (consistent with clients)
+    calculateLocalPlayerScore();
+
+    // Show opponent results
     showRoundResults(results);
+
+    // Update host's leaderboard
+    broadcastLeaderboard();
 
     // Check if game is over
     if (MultiplayerState.gameState.currentRound >= ChidiyaUdd.GameState.totalRounds) {
@@ -647,15 +665,15 @@ function hostEndRound() {
     }
 }
 
+
 function showRoundResults(results) {
     console.log('[showRoundResults] Results received:', results);
     console.log('[showRoundResults] Local players:', ChidiyaUdd.GameState.players);
     console.log('[showRoundResults] My player ID:', MultiplayerState.myPlayerId);
 
-    // Update local player circles with results
+    // Update opponent player scores from host results
+    // Local player score is already calculated locally in calculateLocalPlayerScore()
     ChidiyaUdd.GameState.players.forEach((player, index) => {
-        // Use the player's onlineId to look up their result
-        // Every player should have an onlineId set during setupOnlineGame
         const onlineId = player.onlineId;
 
         if (!onlineId) {
@@ -663,48 +681,48 @@ function showRoundResults(results) {
             return;
         }
 
-        console.log('[showRoundResults] Processing player:', player, 'onlineId:', onlineId, 'isLocal:', player.isLocal);
+        // Skip local player - their score is calculated locally for instant feedback
+        if (player.isLocal) {
+            console.log('[showRoundResults] Skipping local player - score calculated locally');
+            return;
+        }
+
+        console.log('[showRoundResults] Processing opponent:', player, 'onlineId:', onlineId);
 
         const result = results[onlineId];
         console.log('[showRoundResults] Result for onlineId', onlineId, ':', result);
 
         if (result) {
             player.score = result.newScore;
-            console.log('[showRoundResults] Updated player score to:', player.score);
+            console.log('[showRoundResults] Updated opponent score to:', player.score);
 
-            // Skip feedback for inactive players (correct === null means they weren't touching)
-            if (result.correct === null) {
-                ChidiyaUdd.updateScoreDisplay(player.id);
-                return;
-            }
+            // Update opponent card feedback
+            const card = document.getElementById(`opponent-card-${player.onlineId}`);
+            const scoreEl = document.getElementById(`opp-score-${player.onlineId}`);
 
-            if (player.isLocal) {
-                // Show standard feedback for local player
-                ChidiyaUdd.showPlayerFeedback(player.id, result.correct, result.points);
-                ChidiyaUdd.updateScoreDisplay(player.id); // Update local score display
-            } else {
-                // Update opponent card feedback
-                const card = document.getElementById(`opponent-card-${player.onlineId}`);
-                const scoreEl = document.getElementById(`opp-score-${player.onlineId}`);
+            if (scoreEl) scoreEl.textContent = player.score;
 
-                if (scoreEl) scoreEl.textContent = player.score;
-
-                if (card) {
-                    card.classList.remove('lifted', 'kept');
-                    if (result.correct) card.classList.add('correct');
-                    else card.classList.add('wrong');
-
-                    // Reset after delay
-                    setTimeout(() => {
-                        card.classList.remove('correct', 'wrong');
-                    }, 2000);
+            if (card) {
+                card.classList.remove('lifted', 'kept');
+                if (result.correct === null) {
+                    // Inactive player
+                } else if (result.correct) {
+                    card.classList.add('correct');
+                } else {
+                    card.classList.add('wrong');
                 }
+
+                // Reset after delay
+                setTimeout(() => {
+                    card.classList.remove('correct', 'wrong');
+                }, 2000);
             }
         } else {
-            console.warn('[showRoundResults] No result found for player onlineId:', onlineId);
+            console.warn('[showRoundResults] No result found for opponent onlineId:', onlineId);
         }
     });
 }
+
 
 function hostEndGame() {
     if (!MultiplayerState.isHost) return;
@@ -1004,6 +1022,16 @@ function clientStartGame(players) {
 }
 
 function clientStartRound(data) {
+    // Store the current item locally for local scoring
+    MultiplayerState.gameState.currentItem = data.item;
+    MultiplayerState.gameState.currentRound = data.round;
+
+    // CRITICAL: Also update local ChidiyaUdd.GameState so touch handlers work properly
+    // handleTouchEnd checks GameState.currentRound > 0 && GameState.roundStartTime to record 'lifted'
+    ChidiyaUdd.GameState.currentRound = data.round;
+    ChidiyaUdd.GameState.roundStartTime = Date.now();
+    ChidiyaUdd.GameState.currentItem = data.item;
+
     displayRound(data.item, data.round);
 
     // Start local timer
@@ -1012,8 +1040,10 @@ function clientStartRound(data) {
     // Reset touch tracking for this round
     ChidiyaUdd.GameState.players.forEach(player => {
         player.action = null;
+        player.wasTouchingAtRoundStart = player.isTouched || false;
     });
 }
+
 
 function updatePlayerAction(playerId, action) {
     // Find local player index for this online ID
@@ -1071,10 +1101,64 @@ window.updateOpponentDisplay = function () {
 };
 
 function clientEndRound(results, correctAnswer) {
+    // Calculate local player's score locally - no network dependency!
+    calculateLocalPlayerScore();
+
+    // Show results from host for other players, but our score is already calculated
     showRoundResults(results);
 
-    // After local scoring, send my updated score to host
+    // Send our updated score to host for leaderboard
     sendMyScore();
+}
+
+// Calculate score locally for the local player - eliminates network delay issues
+function calculateLocalPlayerScore() {
+    const localPlayer = ChidiyaUdd.GameState.players.find(p => p.isLocal);
+    if (!localPlayer) return;
+
+    const currentItem = MultiplayerState.gameState?.currentItem;
+    if (!currentItem) {
+        console.warn('[Client] No current item for local scoring');
+        return;
+    }
+
+    const canFly = currentItem.canFly;
+    const action = localPlayer.action || 'kept'; // Default to kept if no action
+    const wasTouchingAtStart = localPlayer.wasTouchingAtRoundStart;
+
+    console.log('[Client] Local scoring - Item:', currentItem.name, 'canFly:', canFly, 'action:', action, 'wasTouchingAtStart:', wasTouchingAtStart);
+
+    // If player wasn't touching at start, skip scoring (inactive)
+    if (!wasTouchingAtStart) {
+        console.log('[Client] Player was not touching at round start - no points');
+        ChidiyaUdd.showPlayerFeedback(localPlayer.id, null, 0); // Show inactive feedback
+        return;
+    }
+
+    let points = 0;
+    let correct = false;
+
+    // Scoring logic: same as host
+    if (canFly && action === 'lifted') {
+        points = 10;
+        correct = true;
+    } else if (!canFly && action === 'kept') {
+        points = 10;
+        correct = true;
+    } else {
+        points = -5;
+        correct = false;
+    }
+
+    // Update local score
+    localPlayer.score += points;
+    if (localPlayer.score < 0) localPlayer.score = 0;
+
+    console.log('[Client] Local score calculated - points:', points, 'correct:', correct, 'newScore:', localPlayer.score);
+
+    // Show feedback immediately (no network delay!)
+    ChidiyaUdd.showPlayerFeedback(localPlayer.id, correct, points);
+    ChidiyaUdd.updateScoreDisplay(localPlayer.id);
 }
 
 function handlePlayerDisconnectNotification(playerId) {
