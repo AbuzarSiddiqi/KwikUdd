@@ -2575,3 +2575,429 @@ h4 {
     right: var(--spacing-sm);
   }
 }
+
+/* ==========================================
+   GRAFFITI END-GAME MESSAGE OVERLAY
+   ========================================== */
+
+.graffiti-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0);
+  backdrop-filter: blur(0px);
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.4s ease;
+}
+
+.graffiti-overlay.active {
+  opacity: 1;
+  pointer-events: all;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+}
+
+.graffiti-overlay.shake {
+  animation: graffitiShake 0.3s ease-out;
+}
+
+@keyframes graffitiShake {
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  20% {
+    transform: translateX(-10px) rotate(-1deg);
+  }
+
+  40% {
+    transform: translateX(10px) rotate(1deg);
+  }
+
+  60% {
+    transform: translateX(-8px) rotate(-0.5deg);
+  }
+
+  80% {
+    transform: translateX(8px) rotate(0.5deg);
+  }
+}
+
+.graffiti-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--spacing-md);
+  max-width: 100vw;
+  width: 100%;
+}
+
+.graffiti-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.graffiti-line {
+  font-family: 'Bangers', cursive;
+  font-size: clamp(5rem, 18vw, 10rem);
+  line-height: 0.9;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-weight: 900;
+  opacity: 0;
+  transform: translateX(-100vw) scale(0.5);
+  text-shadow:
+    3px 3px 0 rgba(0, 0, 0, 0.8),
+    6px 6px 0 rgba(0, 0, 0, 0.4);
+}
+
+/* Winner styling - Cool Gold/Green with hard shadows */
+.graffiti-line.winner {
+  color: #FFD700;
+  -webkit-text-stroke: 2px #000;
+  text-shadow:
+    4px 4px 0 #000,
+    8px 8px 0 #2E7D32,
+    10px 10px 5px rgba(0, 0, 0, 0.4);
+  filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.5));
+}
+
+/* Loser styling - Cool Red/Dark Red with hard shadows */
+.graffiti-line.loser {
+  color: #FF4444;
+  -webkit-text-stroke: 2px #000;
+  text-shadow:
+    4px 4px 0 #000,
+    8px 8px 0 #8B0000,
+    10px 10px 5px rgba(0, 0, 0, 0.4);
+  filter: drop-shadow(0 0 5px rgba(255, 68, 68, 0.5));
+}
+
+/* Slide-in animations from different directions */
+.graffiti-line.slide-left {
+  animation: slideFromLeft 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}
+
+.graffiti-line.slide-right {
+  animation: slideFromRight 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}
+
+.graffiti-line.slide-bottom {
+  animation: slideFromBottom 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}
+
+@keyframes slideFromLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(-100vw) scale(0.5) rotate(-10deg);
+  }
+
+  70% {
+    transform: translateX(20px) scale(1.1) rotate(2deg);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1) rotate(0deg);
+  }
+}
+
+@keyframes slideFromRight {
+  0% {
+    opacity: 0;
+    transform: translateX(100vw) scale(0.5) rotate(10deg);
+  }
+
+  70% {
+    transform: translateX(-20px) scale(1.1) rotate(-2deg);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1) rotate(0deg);
+  }
+}
+
+@keyframes slideFromBottom {
+  0% {
+    opacity: 0;
+    transform: translateY(100vh) scale(0.5);
+  }
+
+  70% {
+    transform: translateY(-20px) scale(1.1);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Fade out animation */
+.graffiti-line.fade-out {
+  animation: graffitiFadeOut 0.5s ease-out forwards;
+}
+
+@keyframes graffitiFadeOut {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+    filter: blur(10px);
+  }
+}
+
+/* Skip button */
+.graffiti-skip {
+  position: absolute;
+  bottom: 40px;
+  right: 40px;
+  padding: 12px 24px;
+  font-family: var(--font-primary);
+  font-size: 1rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  opacity: 0;
+  animation: fadeIn 0.5s ease 1s forwards;
+}
+
+.graffiti-skip:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: scale(1.05);
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}
+
+/* Emoji in message - larger size */
+.graffiti-line .graffiti-emoji {
+  font-size: 1.2em;
+  display: inline-block;
+  animation: emojiPop 0.3s ease 0.6s both;
+}
+
+@keyframes emojiPop {
+  0% {
+    transform: scale(0);
+  }
+
+  50% {
+    transform: scale(1.3);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .graffiti-line {
+    font-size: clamp(1.5rem, 7vw, 3rem);
+    letter-spacing: 2px;
+  }
+
+  .graffiti-skip {
+    bottom: 20px;
+    right: 20px;
+    padding: 10px 20px;
+    font-size: 0.9rem;
+  }
+}
+
+/* ==========================================
+   BIRD ON WIRE ANIMATION
+   ========================================== */
+
+.bird-wire-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* Full screen */
+  height: auto;
+  /* Override fixed height */
+  z-index: 2000;
+  pointer-events: none;
+  overflow: hidden;
+  transition: opacity 0.3s;
+}
+
+.bird-wire-container.hidden {
+  opacity: 0;
+  pointer-events: none;
+  display: none;
+  /* Instant hide */
+}
+
+.wire {
+  position: absolute;
+  top: 80px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--gray-800);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Bird Positioning Dynamic */
+.bird {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  top: 22px;
+  /* Sits on wire */
+  left: 50%;
+  transform: translateX(var(--target-x, 0));
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
+}
+
+.bird.hidden {
+  display: none;
+}
+
+.bird-label {
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+/* Animations */
+.bird.perched {
+  animation: birdIdle 2s infinite ease-in-out;
+  animation-delay: calc(var(--target-x, 0px) * 0.01s);
+  /* Stagger idle */
+}
+
+.bird.fly-in {
+  animation: birdFlyIn 0.5s ease-out forwards;
+}
+
+.bird.flying-away {
+  animation: birdFlyAway 0.5s ease-in forwards;
+}
+
+.bird.searching {
+  animation: birdSearching 6s infinite linear;
+}
+
+@keyframes birdIdle {
+
+  0%,
+  100% {
+    transform: translate(var(--target-x, 0), 0);
+  }
+
+  50% {
+    transform: translate(var(--target-x, 0), -3px);
+  }
+}
+
+@keyframes birdFlyIn {
+  from {
+    top: -100px;
+    opacity: 0;
+    transform: translate(var(--target-x, 0), -50px) scale(0.5);
+  }
+
+  to {
+    top: 22px;
+    opacity: 1;
+    transform: translate(var(--target-x, 0), 0) scale(1);
+  }
+}
+
+@keyframes birdFlyAway {
+  from {
+    top: 22px;
+    opacity: 1;
+    transform: translate(var(--target-x, 0), 0);
+  }
+
+  to {
+    top: -100px;
+    opacity: 0;
+    transform: translate(var(--target-x, 0), -50px) rotate(20deg);
+  }
+}
+
+@keyframes birdSearching {
+  0% {
+    top: 20%;
+    left: -10%;
+    transform: scaleX(1) rotate(5deg);
+  }
+
+  25% {
+    top: 40%;
+    left: 40%;
+    transform: scaleX(1) rotate(0deg);
+  }
+
+  40% {
+    top: 15%;
+    left: 80%;
+    transform: scaleX(1) rotate(-5deg);
+  }
+
+  50% {
+    left: 110%;
+    transform: scaleX(1);
+  }
+
+  51% {
+    transform: scaleX(-1);
+  }
+
+  /* Flip */
+  60% {
+    top: 60%;
+    left: 90%;
+    transform: scaleX(-1) rotate(5deg);
+  }
+
+  80% {
+    top: 30%;
+    left: 30%;
+    transform: scaleX(-1) rotate(0deg);
+  }
+
+  100% {
+    top: 20%;
+    left: -10%;
+    transform: scaleX(-1) rotate(-5deg);
+  }
+}

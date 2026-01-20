@@ -159,7 +159,8 @@ const GameState = {
 
     // Settings
     soundEnabled: true,
-    vibrationEnabled: true
+    vibrationEnabled: true,
+    autoRestartEnabled: true
 };
 
 // ==========================================
@@ -307,8 +308,20 @@ function showScreen(screenId) {
                 onlineLeaderboard.style.display = 'none';
             }
         }
+
+        // Nuclear Option: Strict Cleanup for Bird Animation
+        // Only allow birds on these specific screens
+        const allowedBirdScreens = ['create-room-screen', 'join-room-screen', 'lobby-screen'];
+
+        if (window.BirdAnimationController) {
+            if (!allowedBirdScreens.includes(screenId)) {
+                // If we are NOT on a lobby/join screen, FORCE RESET
+                window.BirdAnimationController.reset();
+            }
+        }
     }
 }
+
 
 // ==========================================
 // HOME SCREEN
@@ -376,7 +389,75 @@ function initPlayerSelection() {
     document.getElementById('btn-back-game')?.addEventListener('click', () => {
         playSound('click');
 
-        // Fully reset game state
+        // For online mode, show pause modal instead of directly exiting
+        if (GameState.mode === 'online') {
+            // Show pause modal as confirmation
+            const modal = document.getElementById('pause-modal');
+            const pauseMessage = document.getElementById('pause-message');
+            const resumeBtn = document.getElementById('btn-resume');
+            const quitBtn = document.getElementById('btn-quit-game');
+
+            if (pauseMessage) {
+                pauseMessage.textContent = 'Game is still running. Return or wait in lobby?';
+            }
+
+            // Clone and replace resume button to remove old listeners
+            if (resumeBtn) {
+                const newResumeBtn = resumeBtn.cloneNode(true);
+                resumeBtn.parentNode.replaceChild(newResumeBtn, resumeBtn);
+                newResumeBtn.innerHTML = '▶️ Return to Game';
+                newResumeBtn.addEventListener('click', () => {
+                    playSound('click');
+                    modal.classList.remove('active');
+                });
+            }
+
+            // Clone and replace quit button to change behavior
+            if (quitBtn) {
+                const newQuitBtn = quitBtn.cloneNode(true);
+                quitBtn.parentNode.replaceChild(newQuitBtn, quitBtn);
+                newQuitBtn.innerHTML = '🏠 Wait in Lobby';
+                newQuitBtn.addEventListener('click', () => {
+                    playSound('click');
+                    modal.classList.remove('active');
+
+                    // Hide online leaderboard
+                    const leaderboard = document.getElementById('online-leaderboard');
+                    if (leaderboard) {
+                        leaderboard.style.display = 'none';
+                    }
+
+                    // Show the Return to Game button on lobby
+                    const returnBtn = document.getElementById('btn-return-to-game');
+                    if (returnBtn) {
+                        returnBtn.style.display = 'inline-flex';
+                        // Clone to remove old listeners
+                        const newReturnBtn = returnBtn.cloneNode(true);
+                        returnBtn.parentNode.replaceChild(newReturnBtn, returnBtn);
+                        newReturnBtn.style.display = 'inline-flex';
+                        newReturnBtn.addEventListener('click', () => {
+                            playSound('click');
+                            newReturnBtn.style.display = 'none';
+                            // Show leaderboard again
+                            if (leaderboard) {
+                                leaderboard.style.display = 'flex';
+                            }
+                            showScreen('game-screen');
+                        });
+                    }
+
+                    // Go to lobby screen but don't leave the room
+                    showScreen('lobby-screen');
+                });
+            }
+
+            if (modal) {
+                modal.classList.add('active');
+            }
+            return;
+        }
+
+        // Fully reset game state (offline mode only)
         GameState.waitingForFingers = false;
         GameState.allFingersPlaced = false;
         GameState.currentRound = 0;
@@ -395,19 +476,8 @@ function initPlayerSelection() {
         GameState.players = [];
         GameState.playerCount = 0;
 
-        // Navigate based on game mode
-        if (GameState.mode === 'online') {
-            // For online mode, go back to lobby
-            showScreen('lobby-screen');
-            // Clean up online leaderboard
-            const leaderboard = document.getElementById('online-leaderboard');
-            if (leaderboard) {
-                leaderboard.remove();
-            }
-        } else {
-            // For offline mode, go to player selection
-            showScreen('player-select-screen');
-        }
+        // For offline mode, go to player selection
+        showScreen('player-select-screen');
 
         // Reset game mode
         GameState.mode = null;
@@ -454,6 +524,11 @@ function initPlayerSelection() {
             const leaderboard = document.getElementById('online-leaderboard');
             if (leaderboard) {
                 leaderboard.remove();
+            }
+            // Clear auto-restart timer if running
+            if (typeof MultiplayerState !== 'undefined' && MultiplayerState.autoRestartTimer) {
+                clearInterval(MultiplayerState.autoRestartTimer);
+                MultiplayerState.autoRestartTimer = null;
             }
         }
 
@@ -1222,11 +1297,334 @@ function updateScoreDisplay(playerId) {
 // GAME END / RESULTS
 // ==========================================
 
-function endGame() {
-    showScreen('results-screen');
+// Graffiti message data
+const GRAFFITI_MESSAGES = {
+    losers: [
+        "Chidiya toh udd gayi, tu reh gaya 😭",
+        "Lagta hai tujhe low ping maar gaya 😆",
+        "Bhai ne reaction delay kar diya 💀",
+        "Tumhara game khatam hone wala hai... ho gaya 😅",
+        "Bhai lagta hai chidiya ka dushman hai tu 😂",
+        "Itna silence kyun hai bhai? 😶",
+        "Bhai tune toh dil jeet liya… par game haar gaya 💔",
+        "Issi ko kehte hain confidence ka overdose 😭",
+        "Bhaago! chidiya udd gayi aur tu so gaya 🐦💤",
+        "Tumse na ho payega 2.0 😜",
+        "Ye dekho ye banda dobara bhi haara 😭",
+        "Practice kar bhidu, warna uninstall 😏",
+        "Yeh kya kar diyaaaaa re 😫",
+        "Game ne bola — ab bas kar bhai 😭",
+        "Lagta hai chidiya ne tujhe ignore maar diya 😆"
+    ],
+    winners: [
+        "Jeet gaya re tu toh legend hai 💪🔥",
+        "Aag laga di bhidu! 🔥",
+        "Tu chhupa rustam hi nikla 😎",
+        "Bhai ne entry li aur baazi palat di 💥",
+        "Jeet ke mazza aa gaya 😍",
+        "Sahi pakde hai boss 👏",
+        "Chidiya bhi teri respect kar rahi thi 🕊️😄",
+        "Public bole — humse na ho payega 😏",
+        "Champion spotted 👑",
+        "Oye hoye, kya timing pakdi hai 👏😂",
+        "Bhai, tu hacker hai kya? 🧠💻",
+        "Mic drop moment 😎🎤",
+        "Dil se winner hai tu ❤️🔥",
+        "Mubarak ho, aaj teri kismet jag gayi 😆",
+        "Game ne bola — bas bhai, ye OP player hai 💫"
+    ]
+};
 
-    // Sort players by score
+function showEndGameMessage(isWinner, callback) {
+    const overlay = document.getElementById('graffiti-overlay');
+    const linesContainer = document.getElementById('graffiti-lines');
+    const skipBtn = document.getElementById('graffiti-skip');
+
+    if (!overlay || !linesContainer) {
+        if (callback) callback();
+        return;
+    }
+
+    // Pick random message
+    const messages = isWinner ? GRAFFITI_MESSAGES.winners : GRAFFITI_MESSAGES.losers;
+    const message = messages[Math.floor(Math.random() * messages.length)];
+
+    // Split message into lines (max 2-3 lines for visual impact)
+    const words = message.split(' ');
+    const lines = [];
+    const wordsPerLine = Math.ceil(words.length / 2);
+
+    for (let i = 0; i < words.length; i += wordsPerLine) {
+        lines.push(words.slice(i, i + wordsPerLine).join(' '));
+    }
+
+    // Clear and populate
+    linesContainer.innerHTML = '';
+
+    const animations = ['slide-left', 'slide-right', 'slide-bottom'];
+    const styleClass = isWinner ? 'winner' : 'loser';
+
+    lines.forEach((line, index) => {
+        const lineEl = document.createElement('div');
+        lineEl.className = `graffiti-line ${styleClass}`;
+        lineEl.textContent = line;
+        lineEl.style.animationDelay = `${index * 0.2}s`;
+        linesContainer.appendChild(lineEl);
+    });
+
+    // Show overlay
+    overlay.classList.add('active');
+
+    // Trigger animations with staggered timing
+    setTimeout(() => {
+        const lineElements = linesContainer.querySelectorAll('.graffiti-line');
+        lineElements.forEach((el, index) => {
+            const animClass = animations[index % animations.length];
+            el.classList.add(animClass);
+        });
+
+        // Add shake effect when first line lands
+        setTimeout(() => {
+            overlay.classList.add('shake');
+            playSound('click');
+            vibrate([100, 50, 100]);
+            setTimeout(() => overlay.classList.remove('shake'), 300);
+        }, 600);
+    }, 100);
+
+    // Auto-hide after 5 seconds
+    let timeoutId = setTimeout(() => hideGraffitiOverlay(callback), 5000);
+
+    // Skip button handler
+    const skipHandler = () => {
+        clearTimeout(timeoutId);
+        hideGraffitiOverlay(callback);
+    };
+
+    if (skipBtn) {
+        // Clone to remove old listeners
+        const newSkipBtn = skipBtn.cloneNode(true);
+        skipBtn.parentNode.replaceChild(newSkipBtn, skipBtn);
+        newSkipBtn.addEventListener('click', skipHandler);
+    }
+}
+
+function hideGraffitiOverlay(callback) {
+    const overlay = document.getElementById('graffiti-overlay');
+    const linesContainer = document.getElementById('graffiti-lines');
+
+    if (!overlay) {
+        if (callback) callback();
+        return;
+    }
+
+    // Fade out animation for lines
+    const lineElements = linesContainer?.querySelectorAll('.graffiti-line');
+    lineElements?.forEach(el => {
+        el.classList.add('fade-out');
+    });
+
+    // Hide overlay after animation
+    setTimeout(() => {
+        overlay.classList.remove('active');
+        if (callback) callback();
+    }, 500);
+}
+
+function endGame() {
+    // Sort players by score first to determine winner
     const rankings = [...GameState.players].sort((a, b) => b.score - a.score);
+    const isWinner = rankings[0]?.score > 0;
+
+    // Show graffiti message before results
+    showEndGameMessage(isWinner, () => {
+        showEndGameResults(rankings);
+    });
+}
+
+// ==========================================
+// BIRD ANIMATION CONTROLLER
+// ==========================================
+
+const BirdAnimationController = {
+    birds: {}, // Map of connectionId -> bird element
+    container: null,
+
+    init() {
+        this.container = document.getElementById('bird-wire-container');
+    },
+
+    reset() {
+        if (!this.container) this.init();
+        // Remove all birds
+        Object.values(this.birds).forEach(el => el.remove());
+        this.birds = {};
+        this.container?.classList.add('hidden');
+    },
+
+    show() {
+        if (!this.container) this.init();
+        this.container?.classList.remove('hidden');
+    },
+
+    updateBirds(players) {
+        if (!this.container) this.init();
+
+        // If no players, hide everything
+        if (!players || players.length === 0) {
+            this.reset();
+            return;
+        }
+
+        if (this.container.classList.contains('hidden')) this.show();
+
+        // Check for connecting bird to reuse
+        const connectingBird = document.getElementById('bird-connecting');
+
+        // players is an array of player objects
+        // 1. Identify connected players
+        const currentIds = new Set(players.map(p => p.id));
+
+        // 2. Remove birds for disconnected players
+        Object.keys(this.birds).forEach(id => {
+            if (!currentIds.has(id)) {
+                // Animate fly away
+                const bird = this.birds[id];
+                bird.classList.remove('perched');
+                bird.classList.add('flying-away');
+                setTimeout(() => {
+                    bird.remove();
+                    delete this.birds[id];
+                }, 1000);
+            }
+        });
+
+        // 3. Add/Update birds
+        players.forEach((player, index) => {
+            let bird = this.birds[player.id];
+            const isMe = player.id === MultiplayerState?.myPlayerId;
+
+            if (!bird) {
+                // Check if this is me and I have a connecting bird
+                if (isMe && connectingBird) {
+                    bird = connectingBird;
+                    bird.id = `bird-${player.id}`;
+
+                    // Update visual content (color, label)
+                    const color = player.color?.hex || '#4dabf7';
+
+                    // Update SVG fill/stroke
+                    bird.querySelector('path[fill]').setAttribute('fill', color);
+                    bird.querySelector('path[stroke]').setAttribute('stroke', color);
+
+                    // Update label
+                    const label = bird.querySelector('.bird-label');
+                    if (label) {
+                        label.style.background = color;
+                        label.textContent = 'You';
+                    }
+
+                    // Transition animation
+                    bird.classList.remove('searching', 'guest-bird');
+                    // Force reflow
+                    void bird.offsetWidth;
+                    bird.classList.add('perched');
+
+                } else {
+                    // New bird (standard fly-in)
+                    bird = this.createBirdElement(player);
+                    this.container.appendChild(bird);
+
+                    // Fly in animation
+                    requestAnimationFrame(() => {
+                        bird.classList.add('fly-in');
+                        setTimeout(() => {
+                            bird.classList.remove('fly-in');
+                            bird.classList.add('perched');
+                        }, 500);
+                    });
+                }
+                this.birds[player.id] = bird;
+            }
+
+            // Update label/color if changed (rare but possible)
+            const label = bird.querySelector('.bird-label');
+            if (label && player.name) label.textContent = isMe ? 'You' : (player.name || 'Player');
+
+            // Update Position on wire
+            // Spread them out from center
+            const total = players.length;
+            const spacing = 70; // px
+            const startX = -(total - 1) * spacing / 2;
+            const x = startX + index * spacing;
+
+            // Set position variable for CSS to use
+            bird.style.setProperty('--target-x', `${x}px`);
+        });
+
+        // Cleanup connecting bird if it wasn't used (shouldn't happen if logic is correct, but safe fallback)
+        if (connectingBird && !this.birds[MultiplayerState?.myPlayerId]) {
+            connectingBird.remove();
+        }
+    },
+
+    createBirdElement(player) {
+        const el = document.createElement('div');
+        el.className = 'bird dimmed-bird'; // Start hidden/dimmed or just off-screen
+        el.id = `bird-${player.id}`;
+
+        // Dynamic bird color based on player.color or default
+        const color = player.color?.hex || '#4dabf7';
+        const isSelf = player.id === MultiplayerState?.myPlayerId;
+        const name = isSelf ? 'You' : (player.name || 'Player');
+
+        el.innerHTML = `
+          <svg viewBox="0 0 100 100" width="60" height="60">
+             <path d="M20,60 Q30,40 50,40 Q70,40 80,60 Q90,70 80,80 Q70,90 50,90 Q30,90 20,80 Z" fill="${color}" />
+             <circle cx="70" cy="50" r="5" fill="#fff" />
+             <circle cx="72" cy="50" r="2" fill="#000" />
+             <path d="M80,60 L95,65 L80,70 Z" fill="#FFA500" />
+             <path d="M30,70 Q20,80 10,70" stroke="${color}" stroke-width="3" fill="none" />
+             <path d="M40,65 Q50,75 60,65" stroke="#ffffff80" stroke-width="3" fill="none" />
+             <path d="M40,90 L40,100 M60,90 L60,100" stroke="#333" stroke-width="2" />
+          </svg>
+          <div class="bird-label" style="background: ${color};">${name}</div>
+        `;
+
+        return el;
+    },
+
+    // For local "connecting" state before fully joined
+    showConnectingSelf() {
+        this.show();
+
+        // Remove existing connecting bird if any
+        const existing = document.getElementById('bird-connecting');
+        if (existing) existing.remove();
+
+        // Create temporary bird for "You"
+        const tempPlayer = {
+            id: 'connecting',
+            name: 'Joining...',
+            color: { hex: '#ffd43b' } // Default yellow for guest
+        };
+
+        const bird = this.createBirdElement(tempPlayer);
+        bird.id = 'bird-connecting';
+
+        // Add flying animation class
+        bird.classList.remove('dimmed-bird');
+        bird.classList.add('guest-bird', 'searching'); // Use finding path
+
+        // Position it off-wire (guest-bird class handles this initially)
+        this.container.appendChild(bird);
+    }
+};
+
+window.BirdAnimationController = BirdAnimationController;
+
+function showEndGameResults(rankings) {
+    showScreen('results-screen');
 
     // Display leaderboard
     if (elements.leaderboard) {
@@ -1364,11 +1762,13 @@ function initModals() {
 function initSettingsToggles() {
     const soundToggle = document.getElementById('toggle-sound');
     const vibrationToggle = document.getElementById('toggle-vibration');
+    const autoRestartToggle = document.getElementById('toggle-auto-restart');
 
     // Load saved settings
     const savedSettings = loadSettings();
     GameState.soundEnabled = savedSettings.sound;
     GameState.vibrationEnabled = savedSettings.vibration;
+    GameState.autoRestartEnabled = savedSettings.autoRestart !== false; // default true
 
     if (soundToggle) {
         soundToggle.classList.toggle('active', GameState.soundEnabled);
@@ -1389,6 +1789,16 @@ function initSettingsToggles() {
             if (GameState.vibrationEnabled) vibrate(50);
         });
     }
+
+    if (autoRestartToggle) {
+        autoRestartToggle.classList.toggle('active', GameState.autoRestartEnabled);
+        autoRestartToggle.addEventListener('click', () => {
+            GameState.autoRestartEnabled = !GameState.autoRestartEnabled;
+            autoRestartToggle.classList.toggle('active', GameState.autoRestartEnabled);
+            saveSettings();
+            playSound('click');
+        });
+    }
 }
 
 // ==========================================
@@ -1399,7 +1809,8 @@ function saveSettings() {
     try {
         localStorage.setItem('chidiya-udd-settings', JSON.stringify({
             sound: GameState.soundEnabled,
-            vibration: GameState.vibrationEnabled
+            vibration: GameState.vibrationEnabled,
+            autoRestart: GameState.autoRestartEnabled
         }));
     } catch (e) {
         console.log('Could not save settings');
@@ -1415,7 +1826,7 @@ function loadSettings() {
     } catch (e) {
         console.log('Could not load settings');
     }
-    return { sound: true, vibration: true };
+    return { sound: true, vibration: true, autoRestart: true };
 }
 
 function saveStats(winner) {
@@ -1436,17 +1847,25 @@ function saveStats(winner) {
 function pauseGame() {
     if (GameState.isPaused) return;
 
+    // Disable pause for online mode to prevent timing glitches
+    if (GameState.mode === 'online') {
+        // Show brief message that pause is unavailable
+        const objectDisplay = document.getElementById('object-display');
+        if (objectDisplay) {
+            const originalContent = objectDisplay.innerHTML;
+            objectDisplay.innerHTML = '<div style="font-size: 1rem; color: #666;">Pause unavailable in online mode</div>';
+            setTimeout(() => {
+                objectDisplay.innerHTML = originalContent;
+            }, 1500);
+        }
+        return;
+    }
+
     GameState.isPaused = true;
     GameState.pauseStartTime = Date.now();
 
     if (GameState.roundTimer) {
         cancelAnimationFrame(GameState.roundTimer);
-    }
-
-    // Online mode: use synced pause if host
-    if (GameState.mode === 'online' && typeof hostPauseGame === 'function') {
-        hostPauseGame();
-        return;
     }
 
     // Show pause modal
@@ -1514,6 +1933,9 @@ function initOnlineMode() {
     // Back button
     document.getElementById('btn-back-online-menu')?.addEventListener('click', () => {
         playSound('click');
+        if (typeof cancelJoinRoom === 'function') {
+            cancelJoinRoom();
+        }
         showScreen('online-menu-screen');
     });
 
@@ -1530,6 +1952,28 @@ function initOnlineMode() {
             if (typeof joinRoom === 'function') {
                 joinRoom(input.value.toUpperCase());
             }
+        }
+    });
+
+    // Paste & Join button
+    document.getElementById('btn-paste-join')?.addEventListener('click', async () => {
+        try {
+            const text = await navigator.clipboard.readText();
+            const input = document.getElementById('room-code-input');
+            if (input && text) {
+                // Format code (uppercase, alphanumeric, max 6 chars)
+                const code = text.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+                input.value = code;
+
+                if (code.length >= 4) {
+                    playSound('click');
+                    if (typeof joinRoom === 'function') {
+                        joinRoom(code);
+                    }
+                }
+            }
+        } catch (err) {
+            console.error('Failed to read clipboard', err);
         }
     });
 
@@ -1595,6 +2039,7 @@ window.ChidiyaUdd = {
     showPlayerFeedback,
     updateScoreDisplay,
     endGame,
+    showEndGameMessage,
     playSound,
     vibrate
 };

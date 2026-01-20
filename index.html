@@ -30,7 +30,7 @@
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Fredoka:wght@400;500;600;700&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
   
   <!-- Styles -->
   <link rel="stylesheet" href="styles-v2.css">
@@ -38,6 +38,12 @@
   <title>Chidiya Udd - Bird Fly Game</title>
 </head>
 <body>
+  
+  <!-- Bird Wire Animation Container -->
+  <div id="bird-wire-container" class="bird-wire-container hidden">
+      <div class="wire"></div>
+      <!-- Birds will be added dynamically here -->
+  </div>
   
   <!-- ==========================================
        HOME SCREEN
@@ -288,7 +294,7 @@
       
       <div class="room-code-display">
         <span class="room-code-label">Room Code</span>
-        <span id="display-room-code" class="room-code">------</span>
+        <span id="display-room-code" class="room-code" style="cursor: pointer;" title="Click to copy">------</span>
         <div class="room-code-buttons">
           <button id="btn-copy-code" class="btn btn-sm btn-outline">
             📋 Copy
@@ -330,15 +336,23 @@
       <h2 class="title">Join Room</h2>
       <p class="subtitle">Enter the room code</p>
       
-      <input 
-        type="text" 
-        id="room-code-input" 
-        class="room-code-input" 
-        placeholder="ABCDEF"
-        maxlength="6"
-        autocomplete="off"
-        autocapitalize="characters"
-      >
+      <div style="width: 100%; max-width: 300px; margin: 0 auto 24px; position: relative;">
+        <input 
+          type="text" 
+          id="room-code-input" 
+          class="room-code-input" 
+          placeholder="ABCDEF"
+          maxlength="6"
+          autocomplete="off"
+          autocapitalize="characters"
+          style="width: 100%; max-width: 100%; display: block; margin: 0 auto 8px; box-sizing: border-box;"
+        >
+        <div style="display: flex; justify-content: center;">
+            <button id="btn-paste-join" class="btn btn-secondary btn-sm" style="padding: 4px 12px; font-size: 0.9rem; display: flex; align-items: center; gap: 6px;" title="Paste & Join">
+                📋 Paste & Join
+            </button>
+        </div>
+      </div>
       
       <p id="join-error" class="error-message" style="display: none;"></p>
       
@@ -347,7 +361,7 @@
         <span>Connecting to room...</span>
       </div>
       
-      <div style="display: flex; gap: 16px; margin-top: 24px;">
+      <div style="display: flex; gap: 16px; margin-top: 24px; justify-content: center;">
         <button id="btn-back-online-menu" class="btn btn-outline">
           ← Back
         </button>
@@ -421,9 +435,14 @@
       
       <p class="waiting-message">Waiting for host to start the game...</p>
       
-      <button id="btn-leave-room" class="btn btn-outline" style="margin-top: 24px;">
-        Leave Room
-      </button>
+      <div style="display: flex; gap: 16px; margin-top: 24px; flex-wrap: wrap; justify-content: center;">
+        <button id="btn-return-to-game" class="btn btn-primary" style="display: none;">
+          ▶️ Return to Game
+        </button>
+        <button id="btn-leave-room" class="btn btn-outline">
+          Leave Room
+        </button>
+      </div>
     </div>
   </section>
   
@@ -432,6 +451,18 @@
        ========================================== -->
   <div id="countdown-overlay" class="countdown-overlay">
     <span id="countdown-number" class="countdown-number">3</span>
+  </div>
+  
+  <!-- ==========================================
+       GRAFFITI END-GAME MESSAGE OVERLAY
+       ========================================== -->
+  <div id="graffiti-overlay" class="graffiti-overlay">
+    <div class="graffiti-content">
+      <div id="graffiti-lines" class="graffiti-lines">
+        <!-- Message lines will be injected here -->
+      </div>
+    </div>
+    <button id="graffiti-skip" class="graffiti-skip">Skip ⏭️</button>
   </div>
   
   <!-- ==========================================
@@ -459,6 +490,14 @@
             <span>Vibration</span>
           </span>
           <div id="toggle-vibration" class="toggle active"></div>
+        </div>
+        
+        <div class="settings-item">
+          <span class="settings-label">
+            <span class="settings-icon">🔄</span>
+            <span>Auto-Restart (8s)</span>
+          </span>
+          <div id="toggle-auto-restart" class="toggle active"></div>
         </div>
       </div>
       

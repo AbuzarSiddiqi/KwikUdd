@@ -160,7 +160,6 @@ function createRoom() {
         MultiplayerState.hostPeerId = id;
 
         displayRoomCode(MultiplayerState.roomCode);
-        showMessage('Waiting for players to join...');
 
         // Initialize game state
         MultiplayerState.gameState = {
@@ -182,6 +181,15 @@ function createRoom() {
             isHost: true
         };
         MultiplayerState.gameState.players[id] = hostPlayer;
+        MultiplayerState.myPlayerId = id;
+
+        // Show Bird Animation (Host)
+        if (window.BirdAnimationController) {
+            window.BirdAnimationController.updateBirds([hostPlayer]);
+        }
+
+        // Update lobby UI
+        updateLobbyPlayers(MultiplayerState.gameState.players);
         updateLobbyPlayers();
 
         // Listen for incoming connections
@@ -362,6 +370,11 @@ function recordPlayerAction(playerId, action, timestamp) {
 
 function hostStartGame() {
     if (!MultiplayerState.isHost) return;
+
+    // Hide birds
+    if (window.BirdAnimationController) {
+        window.BirdAnimationController.reset();
+    }
 
     const playerCount = Object.keys(MultiplayerState.gameState.players).length;
     if (playerCount < 2) {
@@ -758,6 +771,22 @@ function hostEndGame() {
 }
 
 function showOnlineResults(rankings) {
+    // Determine if local player is the winner
+    const myPlayerId = MultiplayerState.myPlayerId;
+    const isWinner = rankings[0]?.id === myPlayerId && rankings[0]?.score > 0;
+
+    // Show graffiti message first, then display results
+    if (typeof ChidiyaUdd.showEndGameMessage === 'function') {
+        ChidiyaUdd.showEndGameMessage(isWinner, () => {
+            displayOnlineResultsUI(rankings);
+        });
+    } else {
+        // Fallback if function not available
+        displayOnlineResultsUI(rankings);
+    }
+}
+
+function displayOnlineResultsUI(rankings) {
     ChidiyaUdd.showScreen('results-screen');
 
     const leaderboard = document.getElementById('leaderboard');
@@ -801,24 +830,64 @@ function showOnlineResults(rankings) {
     const playAgainBtn = document.getElementById('btn-play-again');
     const mainMenuBtn = document.getElementById('btn-main-menu');
 
+    // Clear any existing auto-restart timer
+    if (MultiplayerState.autoRestartTimer) {
+        clearInterval(MultiplayerState.autoRestartTimer);
+        MultiplayerState.autoRestartTimer = null;
+    }
+
     // Remove old listeners by cloning
     if (playAgainBtn) {
         const newPlayAgainBtn = playAgainBtn.cloneNode(true);
         playAgainBtn.parentNode.replaceChild(newPlayAgainBtn, playAgainBtn);
 
         if (MultiplayerState.isHost) {
-            // Host can restart
-            newPlayAgainBtn.innerHTML = '<span>🔄</span><span>Play Again</span>';
-            newPlayAgainBtn.classList.remove('btn-disabled');
+            // Check if auto-restart is enabled in settings
+            const autoRestartEnabled = ChidiyaUdd.GameState?.autoRestartEnabled !== false;
+
+            if (autoRestartEnabled) {
+                // Host can restart - show countdown
+                let countdown = 15;
+                newPlayAgainBtn.innerHTML = `<span>🔄</span><span>Play Again (${countdown}s)</span>`;
+                newPlayAgainBtn.classList.remove('btn-disabled');
+
+                // Auto-restart countdown
+                MultiplayerState.autoRestartTimer = setInterval(() => {
+                    countdown--;
+                    if (countdown > 0) {
+                        newPlayAgainBtn.innerHTML = `<span>🔄</span><span>Play Again (${countdown}s)</span>`;
+                    } else {
+                        // Auto-restart
+                        clearInterval(MultiplayerState.autoRestartTimer);
+                        MultiplayerState.autoRestartTimer = null;
+                        ChidiyaUdd.playSound('click');
+                        restartOnlineGame();
+                    }
+                }, 1000);
+            } else {
+                // Auto-restart disabled - just show Play Again button
+                newPlayAgainBtn.innerHTML = '<span>🔄</span><span>Play Again</span>';
+                newPlayAgainBtn.classList.remove('btn-disabled');
+            }
 
             newPlayAgainBtn.addEventListener('click', () => {
+                // Clear timer on manual click
+                if (MultiplayerState.autoRestartTimer) {
+                    clearInterval(MultiplayerState.autoRestartTimer);
+                    MultiplayerState.autoRestartTimer = null;
+                }
                 ChidiyaUdd.playSound('click');
                 ChidiyaUdd.vibrate(50);
                 restartOnlineGame();
             });
         } else {
-            // Client shows waiting message
-            newPlayAgainBtn.innerHTML = '<span>⏳</span><span>Waiting for Host...</span>';
+            // Client shows waiting message with countdown info (if enabled)
+            const autoRestartEnabled = ChidiyaUdd.GameState?.autoRestartEnabled !== false;
+            if (autoRestartEnabled) {
+                newPlayAgainBtn.innerHTML = '<span>⏳</span><span>Auto-restart in 15s...</span>';
+            } else {
+                newPlayAgainBtn.innerHTML = '<span>⏳</span><span>Waiting for Host...</span>';
+            }
             newPlayAgainBtn.classList.add('btn-disabled');
             newPlayAgainBtn.style.opacity = '0.7';
             newPlayAgainBtn.style.cursor = 'not-allowed';
@@ -830,6 +899,11 @@ function showOnlineResults(rankings) {
         mainMenuBtn.parentNode.replaceChild(newMainMenuBtn, mainMenuBtn);
 
         newMainMenuBtn.addEventListener('click', () => {
+            // Clear auto-restart timer
+            if (MultiplayerState.autoRestartTimer) {
+                clearInterval(MultiplayerState.autoRestartTimer);
+                MultiplayerState.autoRestartTimer = null;
+            }
             ChidiyaUdd.playSound('click');
             ChidiyaUdd.vibrate(50);
 
@@ -881,6 +955,9 @@ function joinRoom(roomCode) {
     MultiplayerState.roomCode = roomCode.toUpperCase();
     MultiplayerState.playerName = name;
 
+    // Set joining flag for cancellation
+    MultiplayerState.isJoining = true;
+
     // Save name to localStorage for next time
     try {
         localStorage.setItem('chidiya-udd-player-name', name);
@@ -889,12 +966,21 @@ function joinRoom(roomCode) {
     // Show loading indicator
     const loadingEl = document.getElementById('join-loading');
     const errorEl = document.getElementById('join-error');
-    if (loadingEl) loadingEl.style.display = 'flex';
+    // if (loadingEl) loadingEl.style.display = 'flex'; // Disabled in favor of Bird Animation
     if (errorEl) errorEl.style.display = 'none';
 
     showMessage('Connecting to room...');
 
+    // Show Bird Animation (Guest Connecting)
+    // Show Bird Animation (Guest Connecting)
+    if (window.BirdAnimationController) {
+        window.BirdAnimationController.showConnectingSelf();
+    }
+
     initPeer((id) => {
+        // Check if cancelled
+        if (!MultiplayerState.isJoining) return;
+
         // Try to find host with various ID formats
         const possibleHostIds = [
             roomCode.toLowerCase(),
@@ -906,9 +992,41 @@ function joinRoom(roomCode) {
     });
 }
 
+function cancelJoinRoom() {
+    MultiplayerState.isJoining = false;
+
+    // Hide loading
+    const loadingEl = document.getElementById('join-loading');
+    if (loadingEl) loadingEl.style.display = 'none';
+
+    // Clear any active timeouts or connections
+    if (MultiplayerState.hostConnection) {
+        MultiplayerState.hostConnection.close();
+        MultiplayerState.hostConnection = null;
+    }
+
+    // Reset animation
+    if (window.BirdAnimationController) {
+        window.BirdAnimationController.reset();
+    }
+}
+
 function tryConnect(hostIds, index) {
+    // Check cancellation
+    if (!MultiplayerState.isJoining) return;
+
     if (index >= hostIds.length) {
         showError('Room not found. Please check the code.');
+
+        // Show Bird Error
+        // Show Bird Error
+        if (window.BirdAnimationController) {
+            window.BirdAnimationController.reset();
+        }
+
+        // Hide loading
+        const loadingEl = document.getElementById('join-loading');
+        if (loadingEl) loadingEl.style.display = 'none';
         return;
     }
 
@@ -925,10 +1043,16 @@ function tryConnect(hostIds, index) {
     }, 5000);
 
     conn.on('open', () => {
+        if (!MultiplayerState.isJoining) {
+            conn.close();
+            return;
+        }
+
         clearTimeout(timeout);
-        console.log('[Client] Connected to host');
-        MultiplayerState.hostConnection = conn;
         MultiplayerState.hostPeerId = hostId;
+        MultiplayerState.isJoining = false; // Successfully joined
+
+
 
         // Hide loading indicator
         const loadingEl = document.getElementById('join-loading');
@@ -1040,6 +1164,10 @@ function handleHostMessage(data) {
 
 
 function clientStartGame(players) {
+    // Hide birds
+    if (window.BirdAnimationController) {
+        window.BirdAnimationController.reset();
+    }
     // Initialize complete gameState for client (matching host structure)
     MultiplayerState.gameState = {
         players: players,
@@ -1420,6 +1548,11 @@ function leaveRoom() {
     MultiplayerState.myPlayerId = null;
     MultiplayerState.isConnected = false;
 
+    // Reset Bird Animation
+    if (window.BirdAnimationController) {
+        window.BirdAnimationController.reset();
+    }
+
     // Hide emoji buttons
     showOnlineEmojiButtons(false);
 
@@ -1461,15 +1594,32 @@ function displayRoomCode(code) {
 
     // Copy button
     const copyBtn = document.getElementById('btn-copy-code');
-    if (copyBtn) {
-        copyBtn.addEventListener('click', () => {
-            navigator.clipboard.writeText(code).then(() => {
+    const copyToClipboard = () => {
+        navigator.clipboard.writeText(code).then(() => {
+            if (copyBtn) {
+                const originalText = copyBtn.textContent;
                 copyBtn.textContent = 'Copied!';
                 setTimeout(() => {
-                    copyBtn.textContent = '📋 Copy';
+                    copyBtn.textContent = originalText;
                 }, 2000);
-            });
+            }
+            // Optional: Show toast or feedback on the code element itself
+            const originalColor = codeEl.style.color;
+            codeEl.style.transform = 'scale(1.1)';
+            codeEl.style.transition = 'transform 0.2s';
+            setTimeout(() => {
+                codeEl.style.transform = 'scale(1)';
+            }, 200);
         });
+    };
+
+    if (copyBtn) {
+        copyBtn.addEventListener('click', copyToClipboard);
+    }
+
+    // Also allow clicking the code text itself
+    if (codeEl) {
+        codeEl.addEventListener('click', copyToClipboard);
     }
 
     // Share Link button
@@ -1652,6 +1802,18 @@ function updateLobbyPlayers(players) {
     if (startBtn && MultiplayerState.isHost) {
         const canStart = Object.keys(playersData).length >= 2;
         startBtn.classList.toggle('btn-disabled', !canStart);
+    }
+
+    // Update Bird-on-Wire Animation
+    // Only update if we are in a lobby and game hasn't started
+    const isGameRunning = MultiplayerState.gameState && MultiplayerState.gameState.currentRound > 0;
+    const isInRoom = !!MultiplayerState.roomCode;
+
+    if (window.BirdAnimationController && !isGameRunning && isInRoom) {
+        window.BirdAnimationController.updateBirds(Object.values(playersData));
+    } else if (window.BirdAnimationController && (!isInRoom || isGameRunning)) {
+        // Ensure it's hidden if we shouldn't be seeing it
+        window.BirdAnimationController.reset();
     }
 }
 
@@ -1926,5 +2088,6 @@ window.createRoom = createRoom;
 window.joinRoom = joinRoom;
 window.leaveRoom = leaveRoom;
 window.sendPlayerAction = sendPlayerAction;
+window.cancelJoinRoom = cancelJoinRoom;
 window.MultiplayerState = MultiplayerState;
 
