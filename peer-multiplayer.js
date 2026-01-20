@@ -261,8 +261,21 @@ function handlePlayerMessage(data, playerId) {
                 timestamp: data.timestamp
             };
             break;
+
+        case 'emoji':
+            // Broadcast emoji reaction to all players
+            broadcastToAll({
+                type: 'emoji',
+                playerId: playerId,
+                emoji: data.emoji,
+                playerName: MultiplayerState.gameState.players[playerId]?.name || 'Player'
+            });
+            // Also show locally on host
+            showReceivedEmoji(data.emoji, MultiplayerState.gameState.players[playerId]?.name);
+            break;
     }
 }
+
 
 function addPlayer(playerId, name) {
     if (Object.keys(MultiplayerState.gameState.players).length >= 8) {
@@ -406,6 +419,9 @@ function setupOnlineGame() {
     const oldOpponentsContainer = document.getElementById('opponents-container');
     if (oldOpponentsContainer) oldOpponentsContainer.classList.add('hidden');
 
+    // Show emoji reaction buttons for online mode
+    showOnlineEmojiButtons(true);
+
     // Show the new top leaderboard
     if (MultiplayerState.isHost) {
         broadcastLeaderboard();
@@ -418,6 +434,7 @@ function setupOnlineGame() {
     // Show countdown
     showOnlineCountdown();
 }
+
 
 function showOnlineCountdown() {
     const overlay = document.getElementById('countdown-overlay');
@@ -1003,8 +1020,24 @@ function handleHostMessage(data) {
             // Update leaderboard display with all player scores
             updateLeaderboardDisplay(data.players);
             break;
+
+        case 'emoji':
+            // Show received emoji from another player
+            showReceivedEmoji(data.emoji, data.playerName);
+            break;
+
+        case 'pause':
+            // Host paused the game
+            showPauseModal(data.pausedBy, false);
+            break;
+
+        case 'resume':
+            // Host resumed the game
+            hidePauseModal();
+            break;
     }
 }
+
 
 function clientStartGame(players) {
     // Initialize complete gameState for client (matching host structure)
@@ -1387,9 +1420,13 @@ function leaveRoom() {
     MultiplayerState.myPlayerId = null;
     MultiplayerState.isConnected = false;
 
+    // Hide emoji buttons
+    showOnlineEmojiButtons(false);
+
     // Reset game mode
     ChidiyaUdd.GameState.mode = 'local';
 }
+
 
 // ==========================================
 // BROADCAST HELPERS
@@ -1572,8 +1609,172 @@ function initMultiplayer() {
         ChidiyaUdd.showScreen('join-room-screen');
     });
 
+    // Setup emoji button listeners
+    setupEmojiButtons();
+
     console.log('Multiplayer module initialized');
 }
+
+// ==========================================
+// EMOJI REACTIONS
+// ==========================================
+
+function setupEmojiButtons() {
+    // In-game emoji buttons
+    document.querySelectorAll('#emoji-reactions .emoji-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const emoji = btn.dataset.emoji;
+            sendEmoji(emoji);
+            // Show own emoji locally too
+            showReceivedEmoji(emoji, 'You');
+            ChidiyaUdd.vibrate(30);
+        });
+    });
+
+    // Results screen emoji buttons
+    document.querySelectorAll('#results-emoji-bar .emoji-btn-sm').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const emoji = btn.dataset.emoji;
+            sendEmoji(emoji);
+            showReceivedEmoji(emoji, 'You');
+            ChidiyaUdd.vibrate(30);
+        });
+    });
+}
+
+function sendEmoji(emoji) {
+    if (ChidiyaUdd.GameState.mode !== 'online') return;
+
+    if (MultiplayerState.isHost) {
+        // Host broadcasts directly
+        broadcastToAll({
+            type: 'emoji',
+            playerId: MultiplayerState.myPlayerId,
+            emoji: emoji,
+            playerName: MultiplayerState.playerName || 'Host'
+        });
+    } else if (MultiplayerState.hostConnection?.open) {
+        // Client sends to host who will broadcast
+        MultiplayerState.hostConnection.send({
+            type: 'emoji',
+            emoji: emoji
+        });
+    }
+}
+
+function showReceivedEmoji(emoji, playerName) {
+    // Determine which container to use based on current screen
+    const resultsScreen = document.getElementById('results-screen');
+    const isOnResultsScreen = resultsScreen?.classList.contains('active');
+
+    const container = isOnResultsScreen
+        ? document.getElementById('results-emoji-display')
+        : document.getElementById('emoji-display-container');
+
+    if (!container) return;
+
+    const emojiEl = document.createElement('div');
+    emojiEl.className = 'floating-emoji';
+    emojiEl.textContent = emoji;
+
+    // Random horizontal position
+    const xPos = 20 + Math.random() * 60; // 20% to 80%
+    emojiEl.style.left = `${xPos}%`;
+    emojiEl.style.bottom = '100px';
+
+    container.appendChild(emojiEl);
+
+    // Remove after animation
+    setTimeout(() => {
+        emojiEl.remove();
+    }, 2000);
+
+    console.log(`[Emoji] ${playerName} reacted with ${emoji}`);
+}
+
+// Show/hide emoji buttons based on game mode
+function showOnlineEmojiButtons(show) {
+    const emojiReactions = document.getElementById('emoji-reactions');
+    const resultsEmojiBar = document.getElementById('results-emoji-bar');
+
+    if (emojiReactions) {
+        emojiReactions.classList.toggle('hidden', !show);
+    }
+    if (resultsEmojiBar) {
+        resultsEmojiBar.classList.toggle('hidden', !show);
+    }
+}
+
+// ==========================================
+// SYNCED PAUSE
+// ==========================================
+
+function showPauseModal(pausedByName, isHost) {
+    const modal = document.getElementById('pause-modal');
+    const message = document.getElementById('pause-message');
+    const resumeBtn = document.getElementById('btn-resume');
+
+    if (modal) {
+        modal.classList.add('active');
+    }
+
+    if (message) {
+        if (isHost) {
+            message.textContent = '';
+        } else {
+            message.textContent = `${pausedByName || 'Host'} paused the game`;
+            // Disable resume button for non-host
+            if (resumeBtn) {
+                resumeBtn.classList.add('btn-disabled');
+                resumeBtn.innerHTML = '⏳ Waiting for host...';
+            }
+        }
+    }
+}
+
+function hidePauseModal() {
+    const modal = document.getElementById('pause-modal');
+    const resumeBtn = document.getElementById('btn-resume');
+
+    if (modal) {
+        modal.classList.remove('active');
+    }
+
+    // Reset resume button
+    if (resumeBtn) {
+        resumeBtn.classList.remove('btn-disabled');
+        resumeBtn.innerHTML = '▶️ Resume';
+    }
+}
+
+// Override pause/resume for online mode to sync
+function hostPauseGame() {
+    if (!MultiplayerState.isHost) return;
+
+    broadcastToAll({
+        type: 'pause',
+        pausedBy: MultiplayerState.playerName || 'Host'
+    });
+
+    showPauseModal(null, true);
+    ChidiyaUdd.GameState.isPaused = true;
+}
+
+function hostResumeGame() {
+    if (!MultiplayerState.isHost) return;
+
+    broadcastToAll({
+        type: 'resume'
+    });
+
+    hidePauseModal();
+    ChidiyaUdd.GameState.isPaused = false;
+}
+
+// Make functions globally accessible
+window.hostPauseGame = hostPauseGame;
+window.hostResumeGame = hostResumeGame;
+window.showOnlineEmojiButtons = showOnlineEmojiButtons;
 
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
@@ -1588,3 +1789,4 @@ window.joinRoom = joinRoom;
 window.leaveRoom = leaveRoom;
 window.sendPlayerAction = sendPlayerAction;
 window.MultiplayerState = MultiplayerState;
+

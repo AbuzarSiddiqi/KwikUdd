@@ -1443,6 +1443,12 @@ function pauseGame() {
         cancelAnimationFrame(GameState.roundTimer);
     }
 
+    // Online mode: use synced pause if host
+    if (GameState.mode === 'online' && typeof hostPauseGame === 'function') {
+        hostPauseGame();
+        return;
+    }
+
     // Show pause modal
     const modal = document.getElementById('pause-modal');
     if (modal) {
@@ -1463,6 +1469,11 @@ function resumeGame() {
 
     GameState.isPaused = false;
 
+    // Online mode: use synced resume if host
+    if (GameState.mode === 'online' && typeof hostResumeGame === 'function') {
+        hostResumeGame();
+    }
+
     // Close pause modal
     closePauseModal();
 
@@ -1478,6 +1489,7 @@ function closePauseModal() {
         modal.classList.remove('active');
     }
 }
+
 
 // ==========================================
 // ONLINE MODE HANDLERS
