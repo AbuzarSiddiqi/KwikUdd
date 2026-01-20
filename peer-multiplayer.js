@@ -1057,6 +1057,7 @@ function tryConnect(hostIds, index) {
         }
 
         clearTimeout(timeout);
+        MultiplayerState.hostConnection = conn; // CRITICAL: Store connection to send score updates
         MultiplayerState.hostPeerId = hostId;
         MultiplayerState.isJoining = false; // Successfully joined
 
