@@ -1394,6 +1394,16 @@ function updateLeaderboardDisplay(players) {
 
     players.forEach((player, index) => {
         const isMe = player.id === MultiplayerState.myPlayerId;
+
+        // Optimistic UI: If it's me, use my local score for immediate feedback
+        let displayScore = player.score;
+        if (isMe) {
+            const localPlayer = ChidiyaUdd.GameState.players.find(p => p.isLocal);
+            if (localPlayer) {
+                displayScore = localPlayer.score;
+            }
+        }
+
         const item = document.createElement('div');
         item.className = `leaderboard-player ${isMe ? 'is-me' : ''}`;
 
@@ -1401,7 +1411,7 @@ function updateLeaderboardDisplay(players) {
             <span class="rank">${index + 1}</span>
             <span class="player-dot" style="background: ${player.color?.hex || '#888'}"></span>
             <span class="player-name">${player.name || 'Player'}</span>
-            <span class="player-score">${player.score}</span>
+            <span class="player-score">${displayScore}</span>
         `;
 
         container.appendChild(item);
