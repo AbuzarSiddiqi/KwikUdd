@@ -84,8 +84,22 @@
           ⚙️
         </button>
       </div>
+      
+      <!-- PWA Install Prompt -->
+      <div id="pwa-install-prompt" class="pwa-install-prompt hidden">
+        <div class="pwa-install-content">
+          <span class="pwa-install-icon">📲</span>
+          <div class="pwa-install-text">
+            <strong>Install App</strong>
+            <span>Add to home screen for the best experience!</span>
+          </div>
+          <button id="btn-pwa-install" class="btn btn-primary btn-sm">Install</button>
+          <button id="btn-pwa-dismiss" class="btn btn-icon btn-sm">✕</button>
+        </div>
+      </div>
     </div>
   </section>
+
   
   <!-- ==========================================
        PLAYER SELECTION SCREEN
@@ -551,6 +565,85 @@
     // Prevent pinch zoom
     document.addEventListener('gesturestart', (e) => {
       e.preventDefault();
+    });
+    
+    // ==========================================
+    // PWA INSTALL PROMPT
+    // ==========================================
+    
+    let deferredInstallPrompt = null;
+    const pwaInstallPrompt = document.getElementById('pwa-install-prompt');
+    const btnPwaInstall = document.getElementById('btn-pwa-install');
+    const btnPwaDismiss = document.getElementById('btn-pwa-dismiss');
+    
+    // Check if already installed (standalone mode)
+    function isAppInstalled() {
+      return window.matchMedia('(display-mode: standalone)').matches ||
+             window.navigator.standalone === true || // iOS Safari
+             document.referrer.includes('android-app://');
+    }
+    
+    // Check if user has dismissed before (don't show again for 7 days)
+    function wasPromptDismissed() {
+      const dismissedAt = localStorage.getItem('pwa-install-dismissed');
+      if (!dismissedAt) return false;
+      const daysSinceDismissed = (Date.now() - parseInt(dismissedAt)) / (1000 * 60 * 60 * 24);
+      return daysSinceDismissed < 7;
+    }
+    
+    // Capture the install prompt event
+    window.addEventListener('beforeinstallprompt', (e) => {
+      console.log('[PWA] beforeinstallprompt event fired');
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      
+      // Only show if not installed and not recently dismissed
+      if (!isAppInstalled() && !wasPromptDismissed() && pwaInstallPrompt) {
+        pwaInstallPrompt.classList.remove('hidden');
+        console.log('[PWA] Install prompt shown');
+      }
+    });
+    
+    // Handle install button click
+    btnPwaInstall?.addEventListener('click', async () => {
+      if (!deferredInstallPrompt) {
+        console.log('[PWA] No deferred prompt available');
+        return;
+      }
+      
+      // Show the install prompt
+      deferredInstallPrompt.prompt();
+      
+      // Wait for user response
+      const { outcome } = await deferredInstallPrompt.userChoice;
+      console.log('[PWA] User choice:', outcome);
+      
+      // Clear the deferred prompt
+      deferredInstallPrompt = null;
+      
+      // Hide the banner
+      if (pwaInstallPrompt) {
+        pwaInstallPrompt.classList.add('hidden');
+      }
+    });
+    
+    // Handle dismiss button click
+    btnPwaDismiss?.addEventListener('click', () => {
+      if (pwaInstallPrompt) {
+        pwaInstallPrompt.classList.add('hidden');
+        // Remember that user dismissed (don't show again for 7 days)
+        localStorage.setItem('pwa-install-dismissed', Date.now().toString());
+        console.log('[PWA] Install prompt dismissed');
+      }
+    });
+    
+    // Listen for successful installation
+    window.addEventListener('appinstalled', () => {
+      console.log('[PWA] App installed successfully!');
+      deferredInstallPrompt = null;
+      if (pwaInstallPrompt) {
+        pwaInstallPrompt.classList.add('hidden');
+      }
     });
   </script>
 </body>
