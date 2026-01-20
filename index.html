@@ -604,9 +604,14 @@
     if (roomCode) {
       // Deep link to join a specific room
       document.addEventListener('DOMContentLoaded', () => {
-        console.log('[DeepLink] Room code detected:', roomCode);
-        // Navigate to online mode and pre-fill/auto-join the room
-        handleRoomDeepLink(roomCode.toUpperCase());
+        // Sanitize: extract only the first 6 alphanumeric characters
+        const cleanCode = roomCode.replace(/[^A-Za-z0-9]/g, '').substring(0, 6).toUpperCase();
+        console.log('[DeepLink] Room code detected:', cleanCode, '(raw:', roomCode, ')');
+        if (cleanCode.length === 6) {
+          handleRoomDeepLink(cleanCode);
+        } else {
+          console.warn('[DeepLink] Invalid room code:', roomCode);
+        }
       });
     } else if (mode === 'offline') {
       document.addEventListener('DOMContentLoaded', () => {
