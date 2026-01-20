@@ -1542,26 +1542,31 @@ function showQRModal(code) {
     // Generate room link
     const roomLink = getRoomShareLink(code);
 
-    // Generate QR code
-    if (typeof QRCode !== 'undefined') {
-        QRCode.toCanvas(roomLink, {
-            width: 200,
-            margin: 2,
-            color: {
-                dark: '#000000',
-                light: '#ffffff'
+    // Generate QR code using qrcode-generator library
+    if (typeof qrcode !== 'undefined') {
+        try {
+            // Type 0 = auto-detect, Error correction level L
+            const qr = qrcode(0, 'M');
+            qr.addData(roomLink);
+            qr.make();
+
+            // Create img element with QR code
+            const img = qr.createImgTag(6, 8); // cellSize=6, margin=8
+            container.innerHTML = img;
+
+            // Style the generated image
+            const imgEl = container.querySelector('img');
+            if (imgEl) {
+                imgEl.style.borderRadius = '8px';
             }
-        }, (error, canvas) => {
-            if (error) {
-                console.error('QR generation error:', error);
-                container.innerHTML = '<p style="color: red;">Failed to generate QR code</p>';
-                return;
-            }
-            container.appendChild(canvas);
-        });
+        } catch (error) {
+            console.error('QR generation error:', error);
+            container.innerHTML = '<p style="color: red;">Failed to generate QR code</p>';
+        }
     } else {
         container.innerHTML = '<p style="color: orange;">QR library not loaded</p>';
     }
+
 
     // Show room code
     if (roomCodeDisplay) {
