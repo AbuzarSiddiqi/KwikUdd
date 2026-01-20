@@ -997,6 +997,45 @@ h4 {
   margin-top: var(--spacing-xs);
 }
 
+/* QR Code Modal */
+.qr-modal {
+  max-width: 320px;
+}
+
+.qr-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--spacing-lg);
+}
+
+.qr-code-container {
+  background: white;
+  padding: var(--spacing-md);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.qr-code-container canvas {
+  display: block;
+}
+
+.qr-instruction {
+  font-size: 0.875rem;
+  color: var(--gray-600);
+  text-align: center;
+  margin-bottom: var(--spacing-xs);
+}
+
+.qr-room-code {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--primary);
+}
+
 
 .room-code-input {
   font-family: var(--font-display);

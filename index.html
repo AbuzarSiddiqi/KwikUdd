@@ -294,10 +294,14 @@
             📋 Copy
           </button>
           <button id="btn-share-link" class="btn btn-sm btn-primary">
-            🔗 Share Link
+            🔗 Share
+          </button>
+          <button id="btn-show-qr" class="btn btn-sm btn-secondary">
+            📱 QR
           </button>
         </div>
       </div>
+
 
       
       <p id="online-message" class="waiting-message">Creating room...</p>
@@ -536,11 +540,32 @@
   </div>
   
   <!-- ==========================================
+       QR CODE MODAL
+       ========================================== -->
+  <div id="qr-modal" class="modal-overlay">
+    <div class="modal qr-modal">
+      <div class="modal-header">
+        <h3 class="modal-title">📱 Scan to Join</h3>
+        <button id="btn-close-qr" class="modal-close">✕</button>
+      </div>
+      <div class="qr-content">
+        <div id="qr-code-container" class="qr-code-container"></div>
+        <p class="qr-instruction">Scan this QR code to join the room</p>
+        <p id="qr-room-code" class="qr-room-code"></p>
+      </div>
+    </div>
+  </div>
+  
+  <!-- ==========================================
        SCRIPTS
        ========================================== -->
   
+  <!-- QRCode.js for QR generation -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  
   <!-- PeerJS for multiplayer (loaded from CDN) -->
   <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
+
   
   <!-- Game Logic -->
   <script src="game-v2.js"></script>

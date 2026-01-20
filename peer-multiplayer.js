@@ -1499,7 +1499,11 @@ function displayRoomCode(code) {
             }
         });
     }
+
+    // QR Code button
+    setupQRHandlers(code);
 }
+
 
 // Generate shareable room link
 function getRoomShareLink(code) {
@@ -1519,6 +1523,86 @@ function copyShareLink(link, btn) {
         // Fallback for older browsers
         prompt('Copy this link:', link);
     });
+}
+
+// ==========================================
+// QR CODE FUNCTIONS
+// ==========================================
+
+function showQRModal(code) {
+    const modal = document.getElementById('qr-modal');
+    const container = document.getElementById('qr-code-container');
+    const roomCodeDisplay = document.getElementById('qr-room-code');
+
+    if (!modal || !container) return;
+
+    // Clear previous QR code
+    container.innerHTML = '';
+
+    // Generate room link
+    const roomLink = getRoomShareLink(code);
+
+    // Generate QR code
+    if (typeof QRCode !== 'undefined') {
+        QRCode.toCanvas(roomLink, {
+            width: 200,
+            margin: 2,
+            color: {
+                dark: '#000000',
+                light: '#ffffff'
+            }
+        }, (error, canvas) => {
+            if (error) {
+                console.error('QR generation error:', error);
+                container.innerHTML = '<p style="color: red;">Failed to generate QR code</p>';
+                return;
+            }
+            container.appendChild(canvas);
+        });
+    } else {
+        container.innerHTML = '<p style="color: orange;">QR library not loaded</p>';
+    }
+
+    // Show room code
+    if (roomCodeDisplay) {
+        roomCodeDisplay.textContent = code;
+    }
+
+    // Show modal
+    modal.classList.add('active');
+}
+
+function hideQRModal() {
+    const modal = document.getElementById('qr-modal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
+
+// Setup QR button and modal close
+function setupQRHandlers(code) {
+    const qrBtn = document.getElementById('btn-show-qr');
+    const closeBtn = document.getElementById('btn-close-qr');
+    const modal = document.getElementById('qr-modal');
+
+    if (qrBtn) {
+        qrBtn.addEventListener('click', () => {
+            showQRModal(code);
+        });
+    }
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', hideQRModal);
+    }
+
+    // Close on overlay click
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                hideQRModal();
+            }
+        });
+    }
 }
 
 
