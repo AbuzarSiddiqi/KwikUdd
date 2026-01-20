@@ -397,13 +397,13 @@ h4 {
 
 .app-title {
   font-size: 3rem;
-  margin-bottom: var(--spacing-sm);
+  /* margin-bottom removed */
 }
 
 .app-tagline {
   font-size: 1rem;
   color: var(--gray-500);
-  margin-bottom: var(--spacing-xl);
+  /* margin-bottom removed */
 }
 
 .menu-buttons {
@@ -418,7 +418,7 @@ h4 {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
-  margin-top: var(--spacing-xl);
+  /* margin-top removed */
 }
 
 /* ==========================================
