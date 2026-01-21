@@ -183,9 +183,9 @@ function createRoom() {
         MultiplayerState.gameState.players[id] = hostPlayer;
         MultiplayerState.myPlayerId = id;
 
-        // Show Bird Animation (Host)
+        // Show Bird Animation (Host) with dramatic fly-in
         if (window.BirdAnimationController) {
-            window.BirdAnimationController.updateBirds([hostPlayer]);
+            window.BirdAnimationController.updateBirds([hostPlayer], { isHostCreating: true });
         }
 
         // Update lobby UI
@@ -313,7 +313,8 @@ function addPlayer(playerId, name) {
         hostId: MultiplayerState.hostPeerId
     });
 
-    updateLobbyPlayers();
+    // Update lobby with new join animation for this player
+    updateLobbyPlayers(playerId);
 }
 
 function handlePlayerDisconnect(playerId) {
@@ -958,6 +959,14 @@ function joinRoom(roomCode) {
     // Set joining flag for cancellation
     MultiplayerState.isJoining = true;
 
+    // Update Join button to show joining state
+    const joinBtn = document.getElementById('btn-join-submit');
+    if (joinBtn) {
+        joinBtn.textContent = 'Joining...';
+        joinBtn.classList.add('btn-disabled');
+        joinBtn.disabled = true;
+    }
+
     // Save name to localStorage for next time
     try {
         localStorage.setItem('chidiya-udd-player-name', name);
@@ -1026,10 +1035,20 @@ function tryConnect(hostIds, index) {
     if (index >= hostIds.length) {
         showError('Room not found. Please check the code.');
 
-        // Show Bird Error
+        // Reset joining state
+        MultiplayerState.isJoining = false;
+
         // Show Bird Error
         if (window.BirdAnimationController) {
             window.BirdAnimationController.reset();
+        }
+
+        // Reset Join Button
+        const joinBtn = document.getElementById('btn-join-submit');
+        if (joinBtn) {
+            joinBtn.textContent = 'Join Room';
+            joinBtn.classList.remove('btn-disabled');
+            joinBtn.disabled = false;
         }
 
         // Hide loading
@@ -1116,7 +1135,14 @@ function handleHostMessage(data) {
             MultiplayerState.hostPeerId = data.hostId || MultiplayerState.hostPeerId;
 
             // Update the lobby display
-            updateLobbyPlayers(data.players);
+            updateLobbyPlayers();
+
+            // Show existing birds on wire (so joiner sees host already perched)
+            if (window.BirdAnimationController && data.players) {
+                const players = Object.values(data.players);
+                // Use standard fly-in for existing players (not circling)
+                window.BirdAnimationController.updateBirds(players);
+            }
 
             console.log('[Client] Received player list:', Object.keys(data.players).length, 'players');
             break;
@@ -1780,20 +1806,17 @@ function setupQRHandlers(code) {
 }
 
 
-function updateLobbyPlayers(players) {
+function updateLobbyPlayers(newJoinerId = null) {
     // Get both player list elements (host screen and client screen)
     const hostPlayersList = document.getElementById('host-lobby-players');
     const clientPlayersList = document.getElementById('client-lobby-players');
 
-    const playersData = players || MultiplayerState.gameState?.players || {};
+    const playersData = MultiplayerState.gameState?.players || {};
 
-    console.log('[updateLobbyPlayers] Updating lobby with', Object.keys(playersData).length, 'players');
-
-    // Function to populate a player list element
-    const populatePlayerList = (playersList) => {
-        if (!playersList) return;
-
-        playersList.innerHTML = '';
+    // Clear and repopulate
+    const populatePlayerList = (container) => {
+        if (!container) return;
+        container.innerHTML = '';
 
         Object.values(playersData).forEach(player => {
             const item = document.createElement('div');
@@ -1808,7 +1831,7 @@ function updateLobbyPlayers(players) {
           <span class="status ${statusClass}">${player.isHost ? 'Host' : 'Ready'}</span>
         `;
 
-            playersList.appendChild(item);
+            container.appendChild(item);
         });
     };
 
@@ -1829,7 +1852,9 @@ function updateLobbyPlayers(players) {
     const isInRoom = !!MultiplayerState.roomCode;
 
     if (window.BirdAnimationController && !isGameRunning && isInRoom) {
-        window.BirdAnimationController.updateBirds(Object.values(playersData));
+        // Pass isNewJoin flag if we have a newJoinerId to trigger circling animation
+        const options = newJoinerId ? { isNewJoin: true, newJoinerId: newJoinerId } : {};
+        window.BirdAnimationController.updateBirds(Object.values(playersData), options);
     } else if (window.BirdAnimationController && (!isInRoom || isGameRunning)) {
         // Ensure it's hidden if we shouldn't be seeing it
         window.BirdAnimationController.reset();

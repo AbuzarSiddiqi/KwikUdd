@@ -1339,10 +1339,21 @@ function showEndGameMessage(isWinner, callback) {
     const overlay = document.getElementById('graffiti-overlay');
     const linesContainer = document.getElementById('graffiti-lines');
     const skipBtn = document.getElementById('graffiti-skip');
+    const birdImg = document.getElementById('graffiti-bird');
+    const confettiContainer = document.getElementById('graffiti-confetti');
 
     if (!overlay || !linesContainer) {
         if (callback) callback();
         return;
+    }
+
+    // Set background color based on winner/loser
+    overlay.classList.remove('winner-bg', 'loser-bg');
+    overlay.classList.add(isWinner ? 'winner-bg' : 'loser-bg');
+
+    // Set bird illustration
+    if (birdImg) {
+        birdImg.src = isWinner ? 'assets/winner-bird.png' : 'assets/loser-bird.png';
     }
 
     // Pick random message
@@ -1361,36 +1372,41 @@ function showEndGameMessage(isWinner, callback) {
     // Clear and populate
     linesContainer.innerHTML = '';
 
-    const animations = ['slide-left', 'slide-right', 'slide-bottom'];
     const styleClass = isWinner ? 'winner' : 'loser';
 
     lines.forEach((line, index) => {
         const lineEl = document.createElement('div');
         lineEl.className = `graffiti-line ${styleClass}`;
         lineEl.textContent = line;
-        lineEl.style.animationDelay = `${index * 0.2}s`;
+        lineEl.style.animationDelay = `${0.5 + index * 0.2}s`;
         linesContainer.appendChild(lineEl);
     });
+
+    // Create confetti for winners
+    if (confettiContainer) {
+        confettiContainer.innerHTML = '';
+        if (isWinner) {
+            const colors = ['#FFD700', '#FF6B6B', '#4ECDC4', '#A8E6CF', '#FF8C94', '#C3B1E1'];
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti-piece';
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDelay = Math.random() * 3 + 's';
+                confetti.style.animationDuration = (3 + Math.random() * 2) + 's';
+                confettiContainer.appendChild(confetti);
+            }
+        }
+    }
 
     // Show overlay
     overlay.classList.add('active');
 
-    // Trigger animations with staggered timing
+    // Play sound and vibrate
     setTimeout(() => {
-        const lineElements = linesContainer.querySelectorAll('.graffiti-line');
-        lineElements.forEach((el, index) => {
-            const animClass = animations[index % animations.length];
-            el.classList.add(animClass);
-        });
-
-        // Add shake effect when first line lands
-        setTimeout(() => {
-            overlay.classList.add('shake');
-            playSound('click');
-            vibrate([100, 50, 100]);
-            setTimeout(() => overlay.classList.remove('shake'), 300);
-        }, 600);
-    }, 100);
+        playSound(isWinner ? 'correct' : 'wrong');
+        vibrate(isWinner ? [100, 50, 100] : [150]);
+    }, 500);
 
     // Auto-hide after 5 seconds
     let timeoutId = setTimeout(() => hideGraffitiOverlay(callback), 5000);
@@ -1412,6 +1428,7 @@ function showEndGameMessage(isWinner, callback) {
 function hideGraffitiOverlay(callback) {
     const overlay = document.getElementById('graffiti-overlay');
     const linesContainer = document.getElementById('graffiti-lines');
+    const confettiContainer = document.getElementById('graffiti-confetti');
 
     if (!overlay) {
         if (callback) callback();
@@ -1426,7 +1443,9 @@ function hideGraffitiOverlay(callback) {
 
     // Hide overlay after animation
     setTimeout(() => {
-        overlay.classList.remove('active');
+        overlay.classList.remove('active', 'winner-bg', 'loser-bg');
+        // Clear confetti
+        if (confettiContainer) confettiContainer.innerHTML = '';
         if (callback) callback();
     }, 500);
 }
@@ -1449,6 +1468,7 @@ function endGame() {
 const BirdAnimationController = {
     birds: {}, // Map of connectionId -> bird element
     container: null,
+    isWireOnly: false, // Track if showing wire only (no birds)
 
     init() {
         this.container = document.getElementById('bird-wire-container');
@@ -1459,15 +1479,86 @@ const BirdAnimationController = {
         // Remove all birds
         Object.values(this.birds).forEach(el => el.remove());
         this.birds = {};
+        this.isWireOnly = false;
         this.container?.classList.add('hidden');
+        this.container?.classList.remove('wire-only');
     },
 
     show() {
         if (!this.container) this.init();
         this.container?.classList.remove('hidden');
+        this.container?.classList.remove('wire-only');
+        this.isWireOnly = false;
     },
 
-    updateBirds(players) {
+    // NEW: Show wire only, no birds (for entering Create Room screen)
+    showWireOnly() {
+        if (!this.container) this.init();
+        this.container?.classList.remove('hidden');
+        this.container?.classList.add('wire-only');
+        this.isWireOnly = true;
+    },
+
+    // NEW: Add a bird with exciting circling animation (for joining players)
+    addBirdWithCircling(player, index, totalPlayers) {
+        if (!this.container) this.init();
+        this.container?.classList.remove('wire-only');
+        this.isWireOnly = false;
+
+        const bird = this.createBirdElement(player);
+
+        // Calculate position on wire
+        const spacing = 70;
+        const startX = -(totalPlayers - 1) * spacing / 2;
+        const x = startX + index * spacing;
+        bird.style.setProperty('--target-x', `${x}px`);
+
+        // Add circling animation class
+        bird.classList.remove('dimmed-bird');
+        bird.classList.add('circling');
+
+        this.container.appendChild(bird);
+        this.birds[player.id] = bird;
+
+        // After circling animation completes, switch to perched
+        setTimeout(() => {
+            bird.classList.remove('circling');
+            bird.classList.add('landing');
+
+            // After landing, switch to idle perched animation
+            setTimeout(() => {
+                bird.classList.remove('landing');
+                bird.classList.add('perched');
+            }, 600);
+        }, 2500); // Match circling animation duration
+    },
+
+    // NEW: Add host bird with dramatic fly-in animation
+    addHostBird(player) {
+        if (!this.container) this.init();
+        this.container?.classList.remove('wire-only');
+        this.isWireOnly = false;
+
+        const bird = this.createBirdElement(player);
+
+        // Host is always centered (position 0)
+        bird.style.setProperty('--target-x', '0px');
+
+        // Add host fly-in animation class
+        bird.classList.remove('dimmed-bird');
+        bird.classList.add('host-fly-in');
+
+        this.container.appendChild(bird);
+        this.birds[player.id] = bird;
+
+        // After fly-in animation completes, switch to perched
+        setTimeout(() => {
+            bird.classList.remove('host-fly-in');
+            bird.classList.add('perched');
+        }, 1500); // Match host fly-in animation duration
+    },
+
+    updateBirds(players, options = {}) {
         if (!this.container) this.init();
 
         // If no players, hide everything
@@ -1476,7 +1567,9 @@ const BirdAnimationController = {
             return;
         }
 
+        // Remove wire-only class when we have players
         if (this.container.classList.contains('hidden')) this.show();
+        this.container?.classList.remove('wire-only');
 
         // Check for connecting bird to reuse
         const connectingBird = document.getElementById('bird-connecting');
@@ -1490,7 +1583,7 @@ const BirdAnimationController = {
             if (!currentIds.has(id)) {
                 // Animate fly away
                 const bird = this.birds[id];
-                bird.classList.remove('perched');
+                bird.classList.remove('perched', 'circling', 'landing', 'host-fly-in');
                 bird.classList.add('flying-away');
                 setTimeout(() => {
                     bird.remove();
@@ -1503,6 +1596,7 @@ const BirdAnimationController = {
         players.forEach((player, index) => {
             let bird = this.birds[player.id];
             const isMe = player.id === MultiplayerState?.myPlayerId;
+            const isNewBird = !bird;
 
             if (!bird) {
                 // Check if this is me and I have a connecting bird
@@ -1514,8 +1608,10 @@ const BirdAnimationController = {
                     const color = player.color?.hex || '#4dabf7';
 
                     // Update SVG fill/stroke
-                    bird.querySelector('path[fill]').setAttribute('fill', color);
-                    bird.querySelector('path[stroke]').setAttribute('stroke', color);
+                    const fillPath = bird.querySelector('path[fill]');
+                    const strokePath = bird.querySelector('path[stroke]');
+                    if (fillPath) fillPath.setAttribute('fill', color);
+                    if (strokePath) strokePath.setAttribute('stroke', color);
 
                     // Update label
                     const label = bird.querySelector('.bird-label');
@@ -1524,25 +1620,61 @@ const BirdAnimationController = {
                         label.textContent = 'You';
                     }
 
-                    // Transition animation
-                    bird.classList.remove('searching', 'guest-bird');
-                    // Force reflow
-                    void bird.offsetWidth;
-                    bird.classList.add('perched');
+                    // Transition animation - use searching-to-wire for smooth landing
+                    bird.classList.remove('searching', 'guest-bird', 'dimmed-bird');
+                    void bird.offsetWidth; // Force reflow
+                    bird.classList.add('searching-to-wire');
 
-                } else {
-                    // New bird (standard fly-in)
+                    // After flying to wire, land and perch
+                    setTimeout(() => {
+                        bird.classList.remove('searching-to-wire');
+                        bird.classList.add('landing');
+                        setTimeout(() => {
+                            bird.classList.remove('landing');
+                            bird.classList.add('perched');
+                        }, 600);
+                    }, 1200); // Match searching-to-wire animation duration
+
+                } else if (options.isNewJoin && options.newJoinerId === player.id) {
+                    // New player joining - use circling animation
                     bird = this.createBirdElement(player);
                     this.container.appendChild(bird);
 
-                    // Fly in animation
-                    requestAnimationFrame(() => {
-                        bird.classList.add('fly-in');
+                    bird.classList.remove('dimmed-bird');
+                    bird.classList.add('circling');
+
+                    setTimeout(() => {
+                        bird.classList.remove('circling');
+                        bird.classList.add('landing');
                         setTimeout(() => {
-                            bird.classList.remove('fly-in');
+                            bird.classList.remove('landing');
                             bird.classList.add('perched');
-                        }, 500);
-                    });
+                        }, 600);
+                    }, 2500);
+
+                } else {
+                    // Standard fly-in (for initial load or host bird)
+                    bird = this.createBirdElement(player);
+                    this.container.appendChild(bird);
+
+                    // Use host fly-in for host, regular for others
+                    if (player.isHost && options.isHostCreating) {
+                        bird.classList.remove('dimmed-bird');
+                        bird.classList.add('host-fly-in');
+                        setTimeout(() => {
+                            bird.classList.remove('host-fly-in');
+                            bird.classList.add('perched');
+                        }, 1500);
+                    } else {
+                        // Standard fly-in animation
+                        requestAnimationFrame(() => {
+                            bird.classList.add('fly-in');
+                            setTimeout(() => {
+                                bird.classList.remove('fly-in');
+                                bird.classList.add('perched');
+                            }, 500);
+                        });
+                    }
                 }
                 this.birds[player.id] = bird;
             }
@@ -1578,20 +1710,69 @@ const BirdAnimationController = {
         const isSelf = player.id === MultiplayerState?.myPlayerId;
         const name = isSelf ? 'You' : (player.name || 'Player');
 
+        // Create a lighter version of the color for highlights
+        const lighterColor = this.lightenColor(color, 30);
+        const darkerColor = this.darkenColor(color, 20);
+
         el.innerHTML = `
           <svg viewBox="0 0 100 100" width="60" height="60">
-             <path d="M20,60 Q30,40 50,40 Q70,40 80,60 Q90,70 80,80 Q70,90 50,90 Q30,90 20,80 Z" fill="${color}" />
-             <circle cx="70" cy="50" r="5" fill="#fff" />
-             <circle cx="72" cy="50" r="2" fill="#000" />
-             <path d="M80,60 L95,65 L80,70 Z" fill="#FFA500" />
-             <path d="M30,70 Q20,80 10,70" stroke="${color}" stroke-width="3" fill="none" />
-             <path d="M40,65 Q50,75 60,65" stroke="#ffffff80" stroke-width="3" fill="none" />
-             <path d="M40,90 L40,100 M60,90 L60,100" stroke="#333" stroke-width="2" />
+             <!-- Body with gradient effect -->
+             <ellipse cx="50" cy="60" rx="28" ry="22" fill="${color}" />
+             <ellipse cx="50" cy="55" rx="20" ry="15" fill="${lighterColor}" opacity="0.5" />
+             
+             <!-- Head -->
+             <circle cx="70" cy="45" r="15" fill="${color}" />
+             <circle cx="70" cy="42" r="10" fill="${lighterColor}" opacity="0.4" />
+             
+             <!-- Eye -->
+             <circle cx="75" cy="42" r="5" fill="#fff" />
+             <circle cx="76" cy="41" r="2.5" fill="#333" />
+             <circle cx="77" cy="40" r="1" fill="#fff" />
+             
+             <!-- Beak -->
+             <path d="M82,45 L95,48 L82,52 Z" fill="#FF8C00" />
+             <path d="M82,45 L95,48 L88,48 Z" fill="#FFB347" />
+             
+             <!-- Wing -->
+             <ellipse cx="42" cy="58" rx="18" ry="12" fill="${darkerColor}" />
+             <path d="M30,55 Q25,65 20,58" stroke="${color}" stroke-width="3" fill="none" />
+             <path d="M35,58 Q28,70 22,62" stroke="${color}" stroke-width="2" fill="none" />
+             
+             <!-- Tail -->
+             <path d="M22,65 Q10,60 15,55" stroke="${darkerColor}" stroke-width="4" fill="none" stroke-linecap="round" />
+             <path d="M22,60 Q8,55 12,48" stroke="${color}" stroke-width="3" fill="none" stroke-linecap="round" />
+             
+             <!-- Legs -->
+             <path d="M45,80 L45,92 M42,92 L48,92" stroke="#666" stroke-width="2" stroke-linecap="round" />
+             <path d="M58,80 L58,92 M55,92 L61,92" stroke="#666" stroke-width="2" stroke-linecap="round" />
+             
+             <!-- Blush (cute touch) -->
+             <circle cx="65" cy="50" r="3" fill="#FF9999" opacity="0.5" />
           </svg>
           <div class="bird-label" style="background: ${color};">${name}</div>
         `;
 
         return el;
+    },
+
+    // Helper to lighten a hex color
+    lightenColor(hex, percent) {
+        const num = parseInt(hex.replace('#', ''), 16);
+        const amt = Math.round(2.55 * percent);
+        const R = Math.min(255, (num >> 16) + amt);
+        const G = Math.min(255, ((num >> 8) & 0x00FF) + amt);
+        const B = Math.min(255, (num & 0x0000FF) + amt);
+        return `#${(1 << 24 | R << 16 | G << 8 | B).toString(16).slice(1)}`;
+    },
+
+    // Helper to darken a hex color
+    darkenColor(hex, percent) {
+        const num = parseInt(hex.replace('#', ''), 16);
+        const amt = Math.round(2.55 * percent);
+        const R = Math.max(0, (num >> 16) - amt);
+        const G = Math.max(0, ((num >> 8) & 0x00FF) - amt);
+        const B = Math.max(0, (num & 0x0000FF) - amt);
+        return `#${(1 << 24 | R << 16 | G << 8 | B).toString(16).slice(1)}`;
     },
 
     // For local "connecting" state before fully joined
@@ -1602,11 +1783,11 @@ const BirdAnimationController = {
         const existing = document.getElementById('bird-connecting');
         if (existing) existing.remove();
 
-        // Create temporary bird for "You"
+        // Create temporary bird for "You" - use neutral gray (will become player color on join)
         const tempPlayer = {
             id: 'connecting',
             name: 'Joining...',
-            color: { hex: '#ffd43b' } // Default yellow for guest
+            color: { hex: '#888888' } // Neutral gray for connecting state
         };
 
         const bird = this.createBirdElement(tempPlayer);
@@ -1919,6 +2100,12 @@ function initOnlineMode() {
     document.getElementById('btn-create-room')?.addEventListener('click', () => {
         playSound('click');
         showScreen('create-room-screen');
+
+        // Show wire immediately (before room code is generated)
+        if (window.BirdAnimationController) {
+            window.BirdAnimationController.showWireOnly();
+        }
+
         if (typeof createRoom === 'function') {
             createRoom();
         }
@@ -1952,10 +2139,19 @@ function initOnlineMode() {
 
             // Show loading state
             const btn = document.getElementById('btn-join-submit');
-            const originalText = btn.textContent;
             btn.textContent = 'Joining...';
             btn.classList.add('btn-disabled');
             btn.disabled = true;
+
+            // Set timeout to reset button after 10 seconds if not joined
+            setTimeout(() => {
+                // Only reset if still on join screen and button is still disabled
+                if (btn.disabled && document.getElementById('join-room-screen')?.classList.contains('active')) {
+                    btn.textContent = 'Join';
+                    btn.classList.remove('btn-disabled');
+                    btn.disabled = false;
+                }
+            }, 10000);
 
             if (typeof joinRoom === 'function') {
                 joinRoom(input.value.toUpperCase());

@@ -2578,6 +2578,7 @@ h4 {
 
 /* ==========================================
    GRAFFITI END-GAME MESSAGE OVERLAY
+   Clean Duolingo-Style Design
    ========================================== */
 
 .graffiti-overlay {
@@ -2587,45 +2588,273 @@ h4 {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0);
-  backdrop-filter: blur(0px);
   opacity: 0;
   pointer-events: none;
-  transition: all 0.4s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
 }
 
 .graffiti-overlay.active {
   opacity: 1;
   pointer-events: all;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(8px);
+}
+
+/* Winner state - Vibrant Lime Green like Duolingo */
+.graffiti-overlay.winner-bg {
+  background: linear-gradient(180deg, #7AC142 0%, #58A700 50%, #4C8C00 100%);
+}
+
+/* Loser state - Warm Coral/Orange */
+.graffiti-overlay.loser-bg {
+  background: linear-gradient(180deg, #FF7B5A 0%, #FF5252 50%, #E53935 100%);
+}
+
+/* Bird Illustration */
+.graffiti-illustration {
+  flex-shrink: 0;
+  animation: birdBounceIn 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}
+
+.graffiti-bird-img {
+  width: clamp(180px, 50vw, 280px);
+  height: auto;
+  filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.25));
+  animation: birdFloat 3s ease-in-out infinite;
+  animation-delay: 0.8s;
+}
+
+@keyframes birdBounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) translateY(100px);
+  }
+
+  50% {
+    transform: scale(1.1) translateY(-20px);
+  }
+
+  70% {
+    transform: scale(0.95) translateY(10px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes birdFloat {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-15px);
+  }
+}
+
+/* Content container - centered layout */
+.graffiti-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--spacing-xl);
+  width: 100%;
+  height: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  gap: var(--spacing-lg);
+}
+
+/* Message Text Container */
+.graffiti-lines {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+  animation: textSlideUp 0.6s ease-out 0.4s both;
+}
+
+@keyframes textSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Clean Typography - Duolingo style */
+.graffiti-line {
+  font-family: 'Fredoka', 'Quicksand', var(--font-display);
+  font-size: clamp(1.5rem, 6vw, 2.5rem);
+  font-weight: 700;
+  line-height: 1.2;
+  color: white;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  animation: lineAppear 0.5s ease-out forwards;
+  padding: 0 var(--spacing-md);
+}
+
+.graffiti-line:nth-child(1) {
+  animation-delay: 0.5s;
+}
+
+.graffiti-line:nth-child(2) {
+  animation-delay: 0.7s;
+}
+
+.graffiti-line:nth-child(3) {
+  animation-delay: 0.9s;
+}
+
+@keyframes lineAppear {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Winner text styling */
+.graffiti-line.winner {
+  color: #FFFFFF;
+  text-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.2),
+    0 4px 8px rgba(76, 140, 0, 0.3);
+}
+
+/* Loser text styling */
+.graffiti-line.loser {
+  color: #FFFFFF;
+  text-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.2),
+    0 4px 8px rgba(229, 57, 53, 0.3);
+}
+
+/* Continue Button - Big and Friendly */
+.graffiti-continue-btn {
+  margin-top: var(--spacing-lg);
+  padding: 16px 48px;
+  font-family: 'Fredoka', 'Quicksand', var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1B1B1B;
+  background: #FFFFFF;
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  box-shadow:
+    0 4px 0 rgba(0, 0, 0, 0.15),
+    0 8px 20px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+  opacity: 0;
+  animation: buttonAppear 0.5s ease-out 1.2s forwards;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.graffiti-continue-btn:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 0 rgba(0, 0, 0, 0.15),
+    0 12px 30px rgba(0, 0, 0, 0.2);
+}
+
+.graffiti-continue-btn:active {
+  transform: translateY(2px);
+  box-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.15),
+    0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+@keyframes buttonAppear {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Confetti Container */
+.graffiti-confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Individual confetti pieces */
+.confetti-piece {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  top: -20px;
+  animation: confettiFall 4s ease-in-out infinite;
+}
+
+.confetti-piece:nth-child(odd) {
+  border-radius: 50%;
+}
+
+.confetti-piece:nth-child(even) {
+  border-radius: 2px;
+  transform: rotate(45deg);
+}
+
+@keyframes confettiFall {
+  0% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(100vh) rotate(720deg);
+  }
 }
 
 .graffiti-overlay.shake {
-  animation: graffitiShake 0.3s ease-out;
+  animation: graffitiShake 0.4s ease-out;
 }
 
 @keyframes graffitiShake {
 
   0%,
   100% {
-    transform: translateX(0);
+    transform: translateX(0) rotate(0);
   }
 
   20% {
-    transform: translateX(-10px) rotate(-1deg);
+    transform: translateX(-15px) rotate(-2deg);
   }
 
   40% {
-    transform: translateX(10px) rotate(1deg);
+    transform: translateX(15px) rotate(2deg);
   }
 
   60% {
-    transform: translateX(-8px) rotate(-0.5deg);
+    transform: translateX(-10px) rotate(-1deg);
   }
 
   80% {
-    transform: translateX(8px) rotate(0.5deg);
+    transform: translateX(10px) rotate(1deg);
   }
 }
 
@@ -2635,74 +2864,137 @@ h4 {
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: var(--spacing-md);
-  max-width: 100vw;
+  padding: var(--spacing-xl);
   width: 100%;
+  height: 100%;
+  position: relative;
 }
 
 .graffiti-lines {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+  padding: 0 var(--spacing-md);
 }
 
+/* Main graffiti text - HUGE and creative */
 .graffiti-line {
-  font-family: 'Bangers', cursive;
-  font-size: clamp(5rem, 18vw, 10rem);
-  line-height: 0.9;
-  letter-spacing: 2px;
+  font-family: 'Bangers', 'Impact', cursive;
+  font-size: clamp(3rem, 15vw, 8rem);
+  line-height: 1;
+  letter-spacing: 4px;
   text-transform: uppercase;
   font-weight: 900;
   opacity: 0;
   transform: translateX(-100vw) scale(0.5);
-  text-shadow:
-    3px 3px 0 rgba(0, 0, 0, 0.8),
-    6px 6px 0 rgba(0, 0, 0, 0.4);
+  position: relative;
+  padding: 0.1em 0.2em;
+  /* Make text selectable for copy */
+  user-select: none;
 }
 
-/* Winner styling - Cool Gold/Green with hard shadows */
+/* Winner styling - EPIC Gold with rainbow glow */
 .graffiti-line.winner {
   color: #FFD700;
-  -webkit-text-stroke: 2px #000;
-  text-shadow:
-    4px 4px 0 #000,
-    8px 8px 0 #2E7D32,
-    10px 10px 5px rgba(0, 0, 0, 0.4);
-  filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.5));
+  background: linear-gradient(180deg, #FFD700 0%, #FFA500 50%, #FF8C00 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  -webkit-text-stroke: 3px rgba(0, 0, 0, 0.4);
+  filter:
+    drop-shadow(0 0 20px rgba(255, 215, 0, 0.8)) drop-shadow(0 0 40px rgba(255, 165, 0, 0.6)) drop-shadow(0 0 60px rgba(255, 100, 0, 0.4));
+  animation-delay: 0.1s;
 }
 
-/* Loser styling - Cool Red/Dark Red with hard shadows */
+.graffiti-line.winner::before {
+  content: '👑';
+  position: absolute;
+  top: -0.6em;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.5em;
+  -webkit-text-fill-color: initial;
+  animation: crownBounce 1s ease-in-out infinite;
+}
+
+@keyframes crownBounce {
+
+  0%,
+  100% {
+    transform: translateX(-50%) translateY(0) rotate(-5deg);
+  }
+
+  50% {
+    transform: translateX(-50%) translateY(-10px) rotate(5deg);
+  }
+}
+
+/* Loser styling - Dramatic red/purple */
 .graffiti-line.loser {
   color: #FF4444;
-  -webkit-text-stroke: 2px #000;
-  text-shadow:
-    4px 4px 0 #000,
-    8px 8px 0 #8B0000,
-    10px 10px 5px rgba(0, 0, 0, 0.4);
-  filter: drop-shadow(0 0 5px rgba(255, 68, 68, 0.5));
+  background: linear-gradient(180deg, #FF6B6B 0%, #EE4444 50%, #CC2222 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  -webkit-text-stroke: 3px rgba(0, 0, 0, 0.4);
+  filter:
+    drop-shadow(0 0 20px rgba(255, 68, 68, 0.8)) drop-shadow(0 0 40px rgba(200, 0, 50, 0.6)) drop-shadow(0 0 60px rgba(150, 0, 50, 0.4));
 }
 
-/* Slide-in animations from different directions */
+.graffiti-line.loser::after {
+  content: '💔';
+  position: absolute;
+  bottom: -0.4em;
+  right: -0.2em;
+  font-size: 0.4em;
+  -webkit-text-fill-color: initial;
+  animation: heartBreak 1.5s ease-in-out infinite;
+}
+
+@keyframes heartBreak {
+
+  0%,
+  100% {
+    transform: scale(1) rotate(0);
+  }
+
+  25% {
+    transform: scale(1.1) rotate(-5deg);
+  }
+
+  75% {
+    transform: scale(0.9) rotate(5deg);
+  }
+}
+
+/* Slide-in animations - MORE DRAMATIC */
 .graffiti-line.slide-left {
-  animation: slideFromLeft 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+  animation: slideFromLeftDoodle 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
 }
 
 .graffiti-line.slide-right {
-  animation: slideFromRight 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+  animation: slideFromRightDoodle 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
 }
 
 .graffiti-line.slide-bottom {
-  animation: slideFromBottom 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+  animation: slideFromBottomDoodle 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
 }
 
-@keyframes slideFromLeft {
+@keyframes slideFromLeftDoodle {
   0% {
     opacity: 0;
-    transform: translateX(-100vw) scale(0.5) rotate(-10deg);
+    transform: translateX(-120vw) scale(0.3) rotate(-20deg);
   }
 
-  70% {
-    transform: translateX(20px) scale(1.1) rotate(2deg);
+  60% {
+    transform: translateX(30px) scale(1.15) rotate(5deg);
+  }
+
+  80% {
+    transform: translateX(-10px) scale(0.95) rotate(-2deg);
   }
 
   100% {
@@ -2711,14 +3003,18 @@ h4 {
   }
 }
 
-@keyframes slideFromRight {
+@keyframes slideFromRightDoodle {
   0% {
     opacity: 0;
-    transform: translateX(100vw) scale(0.5) rotate(10deg);
+    transform: translateX(120vw) scale(0.3) rotate(20deg);
   }
 
-  70% {
-    transform: translateX(-20px) scale(1.1) rotate(-2deg);
+  60% {
+    transform: translateX(-30px) scale(1.15) rotate(-5deg);
+  }
+
+  80% {
+    transform: translateX(10px) scale(0.95) rotate(2deg);
   }
 
   100% {
@@ -2727,105 +3023,129 @@ h4 {
   }
 }
 
-@keyframes slideFromBottom {
+@keyframes slideFromBottomDoodle {
   0% {
     opacity: 0;
-    transform: translateY(100vh) scale(0.5);
+    transform: translateY(100vh) scale(0.3) rotate(10deg);
   }
 
-  70% {
-    transform: translateY(-20px) scale(1.1);
+  60% {
+    transform: translateY(-30px) scale(1.15) rotate(-3deg);
+  }
+
+  80% {
+    transform: translateY(10px) scale(0.95) rotate(1deg);
   }
 
   100% {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0) scale(1) rotate(0deg);
   }
 }
 
 /* Fade out animation */
 .graffiti-line.fade-out {
-  animation: graffitiFadeOut 0.5s ease-out forwards;
+  animation: graffitiFadeOutDoodle 0.6s ease-out forwards;
 }
 
-@keyframes graffitiFadeOut {
+@keyframes graffitiFadeOutDoodle {
   0% {
     opacity: 1;
-    transform: scale(1);
+    transform: scale(1) rotate(0);
+  }
+
+  50% {
+    opacity: 0.5;
+    transform: scale(1.3) rotate(3deg);
   }
 
   100% {
     opacity: 0;
-    transform: scale(1.5);
-    filter: blur(10px);
+    transform: scale(2) rotate(-5deg);
+    filter: blur(20px);
   }
 }
 
-/* Skip button */
+/* Skip button - More stylish */
 .graffiti-skip {
   position: absolute;
-  bottom: 40px;
-  right: 40px;
-  padding: 12px 24px;
-  font-family: var(--font-primary);
-  font-size: 1rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.7);
-  background: rgba(255, 255, 255, 0.1);
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  bottom: max(30px, env(safe-area-inset-bottom) + 20px);
+  right: 30px;
+  padding: 14px 28px;
+  font-family: 'Bangers', var(--font-primary);
+  font-size: 1.1rem;
+  letter-spacing: 2px;
+  color: rgba(255, 255, 255, 0.9);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05));
+  border: 2px solid rgba(255, 255, 255, 0.4);
   border-radius: var(--radius-full);
   cursor: pointer;
   transition: all 0.3s ease;
   opacity: 0;
-  animation: fadeIn 0.5s ease 1s forwards;
+  animation: fadeInSkip 0.5s ease 1.5s forwards;
+  backdrop-filter: blur(10px);
+  text-transform: uppercase;
 }
 
 .graffiti-skip:hover {
   color: white;
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.5);
-  transform: scale(1.05);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.1));
+  border-color: rgba(255, 255, 255, 0.7);
+  transform: scale(1.08);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
 }
 
-@keyframes fadeIn {
+.graffiti-skip:active {
+  transform: scale(0.95);
+}
+
+@keyframes fadeInSkip {
   to {
     opacity: 1;
   }
 }
 
-/* Emoji in message - larger size */
+/* Emoji in message - larger and animated */
 .graffiti-line .graffiti-emoji {
-  font-size: 1.2em;
+  font-size: 1.3em;
   display: inline-block;
-  animation: emojiPop 0.3s ease 0.6s both;
+  -webkit-text-fill-color: initial;
+  animation: emojiPopBounce 0.5s ease 0.8s both;
 }
 
-@keyframes emojiPop {
+@keyframes emojiPopBounce {
   0% {
-    transform: scale(0);
+    transform: scale(0) rotate(-30deg);
   }
 
-  50% {
-    transform: scale(1.3);
+  60% {
+    transform: scale(1.4) rotate(10deg);
   }
 
   100% {
-    transform: scale(1);
+    transform: scale(1) rotate(0);
   }
 }
 
-/* Responsive adjustments */
+/* Mobile responsiveness - Keep it BIG */
 @media (max-width: 480px) {
   .graffiti-line {
-    font-size: clamp(1.5rem, 7vw, 3rem);
-    letter-spacing: 2px;
+    font-size: clamp(2.5rem, 14vw, 5rem);
+    letter-spacing: 3px;
+    padding: 0.05em 0.1em;
   }
 
   .graffiti-skip {
-    bottom: 20px;
+    bottom: max(20px, env(safe-area-inset-bottom) + 10px);
     right: 20px;
-    padding: 10px 20px;
-    font-size: 0.9rem;
+    padding: 12px 24px;
+    font-size: 1rem;
+  }
+
+  .graffiti-overlay.active::before,
+  .graffiti-overlay.active::after {
+    font-size: 1.5rem;
+    letter-spacing: 0.5rem;
   }
 }
 
@@ -2999,5 +3319,172 @@ h4 {
     top: 20%;
     left: -10%;
     transform: scaleX(-1) rotate(-5deg);
+  }
+}
+
+/* Animation to transition from searching/flying to landing on wire */
+.bird.searching-to-wire {
+  animation: birdSearchToWire 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes birdSearchToWire {
+  0% {
+    /* Start from current position - will be in middle of searching */
+    opacity: 1;
+  }
+
+  30% {
+    top: 30%;
+    left: 60%;
+    transform: scaleX(1) scale(0.9) rotate(-10deg);
+  }
+
+  60% {
+    top: 15%;
+    left: 50%;
+    transform: translateX(var(--target-x, 0)) scaleX(1) scale(1.05) rotate(5deg);
+  }
+
+  80% {
+    top: 30px;
+    left: 50%;
+    transform: translateX(var(--target-x, 0)) scaleX(1) scale(0.95) rotate(-2deg);
+  }
+
+  100% {
+    top: 22px;
+    left: 50%;
+    transform: translateX(var(--target-x, 0)) scaleX(1) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+/* New: Bird circles excitedly before landing (shorter, more exciting animation) */
+.bird.circling {
+  animation: birdCircling 2.5s ease-in-out forwards;
+}
+
+@keyframes birdCircling {
+  0% {
+    top: 120%;
+    left: 50%;
+    transform: translateX(-50%) scale(0.3) rotate(-20deg);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  20% {
+    top: 60%;
+    left: 20%;
+    transform: translateX(0) scale(0.8) rotate(15deg);
+  }
+
+  40% {
+    top: 30%;
+    left: 80%;
+    transform: translateX(0) scale(1) rotate(-10deg);
+  }
+
+  60% {
+    top: 50%;
+    left: 60%;
+    transform: translateX(0) scale(0.9) rotate(5deg);
+  }
+
+  80% {
+    top: 25%;
+    left: 40%;
+    transform: translateX(0) scale(1) rotate(-5deg);
+  }
+
+  100% {
+    top: 22px;
+    left: 50%;
+    transform: translateX(var(--target-x, 0)) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+/* New: Smooth landing from flying to perched state */
+.bird.landing {
+  animation: birdLanding 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes birdLanding {
+  0% {
+    transform: translateX(var(--target-x, 0)) translateY(-15px) scale(1.1) rotate(-5deg);
+  }
+
+  50% {
+    transform: translateX(var(--target-x, 0)) translateY(3px) scale(0.95) rotate(2deg);
+  }
+
+  75% {
+    transform: translateX(var(--target-x, 0)) translateY(-2px) scale(1.02);
+  }
+
+  100% {
+    transform: translateX(var(--target-x, 0)) translateY(0) scale(1) rotate(0deg);
+  }
+}
+
+/* Wire-only state: wire visible but ready for birds */
+.bird-wire-container.wire-only {
+  opacity: 1;
+  display: block;
+}
+
+.bird-wire-container.wire-only .bird {
+  display: none;
+}
+
+/* Host bird specific fly-in (flies in from bottom-left like circling) */
+.bird.host-fly-in {
+  animation: hostBirdFlyIn 1.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes hostBirdFlyIn {
+  0% {
+    top: 120%;
+    left: -20%;
+    transform: scale(0.4) rotate(-20deg);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  30% {
+    top: 60%;
+    left: 30%;
+    transform: scale(0.9) rotate(15deg);
+  }
+
+  50% {
+    top: 35%;
+    left: 70%;
+    transform: scale(1) rotate(-10deg);
+  }
+
+  70% {
+    top: 20%;
+    left: 50%;
+    transform: translateX(var(--target-x, 0)) scale(1.1) rotate(5deg);
+  }
+
+  85% {
+    top: 30px;
+    transform: translateX(var(--target-x, 0)) scale(0.95) rotate(-3deg);
+  }
+
+  100% {
+    top: 22px;
+    left: 50%;
+    transform: translateX(var(--target-x, 0)) scale(1) rotate(0deg);
+    opacity: 1;
   }
 }
