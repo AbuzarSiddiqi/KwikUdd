@@ -59,6 +59,16 @@ const ITEMS = [
     { name: "EMU", canFly: false, emoji: "🪶" },       // Flightless bird
     { name: "KIWI BIRD", canFly: false, emoji: "🐦" }, // NZ flightless bird (not the fruit!)
 
+    // ===== MYTHICAL & SPECIAL (Flying) =====
+    { name: "DRAGON", canFly: true, emoji: "🐉" },
+    { name: "UFO", canFly: true, emoji: "🛸" },
+    { name: "PEGASUS", canFly: true, emoji: "🦄" },
+    { name: "PHOENIX", canFly: true, emoji: "🔥" },
+    { name: "GRIFFIN", canFly: true, emoji: "🦁" },
+    { name: "PARAGLIDER", canFly: true, emoji: "🪂" },
+    { name: "SATELLITE", canFly: true, emoji: "🛰️" },
+    { name: "FAIRY", canFly: true, emoji: "🧚" },
+
     // ===== NON-FLYING THINGS (32 items) =====
 
     // Land animals
@@ -103,7 +113,17 @@ const ITEMS = [
     { name: "PHONE", canFly: false, emoji: "📱" },
     { name: "BALL", canFly: false, emoji: "⚽" },
     { name: "HOUSE", canFly: false, emoji: "🏠" },
-    { name: "MOUNTAIN", canFly: false, emoji: "🏔️" }
+    { name: "MOUNTAIN", canFly: false, emoji: "🏔️" },
+
+    // Special Non-Flying
+    { name: "T-REX", canFly: false, emoji: "🦖" },
+    { name: "ROBOT", canFly: false, emoji: "🤖" },
+    { name: "TANK", canFly: false, emoji: "🛡️" },
+    { name: "PYRAMID", canFly: false, emoji: "🔺" },
+    { name: "STATUE OF LIBERTY", canFly: false, emoji: "🗽" },
+    { name: "EIFFEL TOWER", canFly: false, emoji: "🗼" },
+    { name: "PIZZA", canFly: false, emoji: "🍕" },
+    { name: "BURGER", canFly: false, emoji: "🍔" }
 ];
 
 // ==========================================
@@ -1170,6 +1190,9 @@ function endRound() {
     const canFly = GameState.currentItem.canFly;
     console.log('Item:', GameState.currentItem.name, 'canFly:', canFly);
 
+    let activePlayerCount = 0;
+    let allPlayersCorrect = true;
+
     // Calculate scores for each player
     GameState.players.forEach(player => {
         const action = player.action || 'kept'; // No action = kept finger down
@@ -1186,6 +1209,8 @@ function endRound() {
             return; // Skip this player entirely
         }
 
+        activePlayerCount++;
+
         if (canFly) {
             // Should have lifted
             if (action === 'lifted') {
@@ -1193,6 +1218,7 @@ function endRound() {
                 correct = true;
             } else {
                 points = -5;
+                correct = false;
             }
         } else {
             // Should have kept down
@@ -1201,7 +1227,12 @@ function endRound() {
                 correct = true;
             } else {
                 points = -5;
+                correct = false;
             }
+        }
+
+        if (!correct) {
+            allPlayersCorrect = false;
         }
 
         console.log(`Player ${player.id + 1}: correct=${correct}, points=${points}`);
@@ -1213,6 +1244,11 @@ function endRound() {
         showPlayerFeedback(player.id, correct, points);
         updateScoreDisplay(player.id);
     });
+
+    // Perfect Round Effect
+    if (activePlayerCount >= 2 && allPlayersCorrect) {
+        setTimeout(showPerfectRoundEffect, 300); // Small delay to sync with feedback
+    }
 
     // Reset round state
     GameState.roundStartTime = null;
@@ -1227,6 +1263,28 @@ function endRound() {
     setTimeout(() => {
         console.log('Starting next round...');
         startNextRound();
+    }, 2000);
+}
+
+function showPerfectRoundEffect() {
+    console.log('PERFECT ROUND!');
+    const gameScreen = document.getElementById('game-screen');
+    if (!gameScreen) return;
+
+    // Create perfect round overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'perfect-round-overlay';
+    overlay.innerHTML = '<div class="perfect-text">PERFECT ROUND!</div>';
+    gameScreen.appendChild(overlay);
+
+    // Play special sound (two correct sounds in succession)
+    playSound('correct');
+    setTimeout(() => playSound('correct'), 200);
+    vibrate([50, 50, 50, 50, 200]);
+
+    // Remove after animation
+    setTimeout(() => {
+        overlay.remove();
     }, 2000);
 }
 
